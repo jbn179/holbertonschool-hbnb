@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 from app import db  # Assuming you have set up SQLAlchemy in your Flask app
+<<<<<<< HEAD
 from app.persistence.repository import Repository
+=======
+from app.models import User, Place, Review, Amenity  # Import your models
+
+>>>>>>> origin/main
 
 class Repository(ABC):
     @abstractmethod
@@ -57,7 +62,11 @@ class InMemoryRepository(Repository):
 
     def get_by_email(self, email):
         return self.get_by_attribute('email', email)
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
 
 class SQLAlchemyRepository(Repository):
     def __init__(self, model):
@@ -87,5 +96,9 @@ class SQLAlchemyRepository(Repository):
             db.session.commit()
 
     def get_by_attribute(self, attr_name, attr_value):
+<<<<<<< HEAD
         return self.model.query.filter(getattr(self.model, attr_name) == attr_value).first()
 
+=======
+        return self.model.query.filter(getattr(self.model, attr_name) == attr_value).first()
+>>>>>>> origin/main
