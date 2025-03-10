@@ -16,12 +16,9 @@ class User(BaseModel):
         self.last_name = self._validate_string(last_name, "Last name", 50)
         self.email = self._validate_email(email)
         self.is_admin = is_admin
-<<<<<<< HEAD
         self.password = None
         if password:
             self.hash_password(password)
-=======
->>>>>>> origin/main
 
     def _validate_string(self, value, field_name, max_length):
         if not isinstance(value, str) or len(value.strip()) == 0:
@@ -39,7 +36,6 @@ class User(BaseModel):
             raise ValueError("Invalid email format")
         return email
 
-<<<<<<< HEAD
     def hash_password(self, password):
         """Hashes the password before storing it."""
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -48,8 +44,6 @@ class User(BaseModel):
         """Verifies if the provided password matches the hashed password."""
         return bcrypt.check_password_hash(self.password, password)
 
-=======
->>>>>>> origin/main
     def update(self, data):
         if 'first_name' in data:
             self.first_name = self._validate_string(data['first_name'], "First name", 50)
