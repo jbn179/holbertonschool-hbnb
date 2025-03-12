@@ -5,6 +5,7 @@ import re
 
 class User(BaseModel):
     __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}  # Ajouter cette ligne pour résoudre le problème de table déjà définie
 
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
@@ -23,8 +24,15 @@ class User(BaseModel):
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def verify_password(self, password):
-        """Verify the hashed password."""
-        return bcrypt.check_password_hash(self.password, password)
+        """Verify a password against the stored hash."""
+        try:
+            pw_bytes = password.encode('utf-8')
+            hash_bytes = self.password.encode('utf-8')
+            import bcrypt
+            return bcrypt.checkpw(pw_bytes, hash_bytes)
+        except Exception as e:
+            print(f"Password verification error: {str(e)}")
+            return False
         
     @validates('first_name')
     def validate_first_name(self, key, first_name):

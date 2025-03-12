@@ -21,7 +21,24 @@ jwt = JWTManager()
 
 def create_app(config_class=config.DevelopmentConfig):
     app = Flask(__name__)
-    api = Api(app, version='1.0', title='HBnB API', description='HBnB Application API', doc='/api/v1/')
+    
+    # Définir les détails de sécurité pour Swagger
+    authorizations = {
+        'Bearer': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization'
+        }
+    }
+    
+    api = Api(app, 
+              version='1.0', 
+              title='HBnB API', 
+              description='HBnB Application API', 
+              doc='/api/v1/',
+              authorizations=authorizations,
+              security='Bearer')  # Activer la sécurité par défaut
+    
     jwt.init_app(app)
     
     # Configuration

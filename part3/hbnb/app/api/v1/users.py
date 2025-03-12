@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request
 from http import HTTPStatus
-from flask_jwt_extended import jwt_required, get_jwt_identity  # Add this import
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt  # Add this import
 from app.services.facade import facade
 from datetime import datetime
 
@@ -50,8 +50,9 @@ class UserList(Resource):
     def post(self):
         """Register a new user (admin only)"""
         # Check administrator privileges
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin', False):
+        user_id = get_jwt_identity()  # Now just the ID
+        claims = get_jwt()  # Retrieve additional claims
+        if not claims.get('is_admin', False):
             return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
             
         data = request.json
@@ -124,12 +125,13 @@ class UserResource(Resource):
     def put(self, user_id):
         """Update a user (admin only)"""
         # check admin 
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin', False):
+        current_user_id = get_jwt_identity()  # Renommez cette variable
+        claims = get_jwt()  # Retrieve additional claims
+        if not claims.get('is_admin', False):
             return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
         
         # Get the user to update
-        user = facade.get_user_by_id(user_id)
+        user = facade.get_user_by_id(user_id)  # Maintenant utilise l'ID de l'URL
         if not user:
             return {'error': 'User not found'}, HTTPStatus.NOT_FOUND
         
@@ -173,8 +175,9 @@ class AdminUserManagement(Resource):
     def post(self):
         """Admin creates a new user (admin only)"""
         # Check admin privileges
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin', False):
+        user_id = get_jwt_identity()  # Now just the ID
+        claims = get_jwt()  # Retrieve additional claims
+        if not claims.get('is_admin', False):
             return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
         
         data = request.json
@@ -205,24 +208,21 @@ class AdminUserManagement(Resource):
 class AdminUserModify(Resource):
     @api.doc('admin_update_user')
     @api.expect(user_model)
-    @api.response(200, 'User updated successfully by admin')
-    @api.response(400, 'Invalid input')
-    @api.response(401, 'Unauthorized - Missing or invalid token')
-    @api.response(403, 'Admin privileges required')
-    @api.response(404, 'User not found')
     @jwt_required()
     def put(self, user_id):
         """Admin updates a user (admin only, can update email and password)"""
         # Check admin privileges
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin', False):
+        current_user_id = get_jwt_identity()  # Renommer cette variable
+        claims = get_jwt()  # Retrieve additional claims
+        if not claims.get('is_admin', False):
             return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
             
-        # Get the user to update
+        # Get the user to update - maintenant utilise correctement user_id de l'URL
         user = facade.get_user_by_id(user_id)
         if not user:
             return {'error': 'User not found'}, HTTPStatus.NOT_FOUND
-            
+        
+        # Get the update data
         data = request.json
         email = data.get('email')
         
