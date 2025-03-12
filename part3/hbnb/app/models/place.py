@@ -1,75 +1,55 @@
-from app.models.base_model import BaseModel
+from app import db
+from app.models.basemodel import BaseModel
+from sqlalchemy.orm import validates, relationship
+from app.models.associations import place_amenity
 
 class Place(BaseModel):
-    def __init__(self, title, description, price, latitude, longitude, owner_id, amenities=None, **kwargs):
-        super().__init__(**kwargs)
-        self.title = self._validate_string(title, "Title", 100)
-        self.description = self._validate_string(description, "Description", 1000)
-        self._price = 0
-        self.price = price
-        self._latitude = 0
-        self.latitude = latitude
-        self._longitude = 0
-        self.longitude = longitude
-        self.owner_id = owner_id
-        self.amenities = amenities if amenities else []
-
-    def _validate_string(self, value, field_name, max_length):
-        if not isinstance(value, str) or len(value.strip()) == 0:
-            raise ValueError(f"{field_name} is required and must be a non-empty string")
-        if len(value) > max_length:
-            raise ValueError(f"{field_name} must be at most {max_length} characters long")
-        return value.strip()
-
-    @property
-    def price(self):
-        return self._price
-
-    @price.setter
-    def price(self, value):
-        if not isinstance(value, (int, float)):
-            raise ValueError("Price must be a number")
-        if value < 0:
+    """Place model representing a rental property"""
+    __tablename__ = 'places'
+    
+    title = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.String(1024), nullable=True)
+    price = db.Column(db.Float, nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    
+    # Foreign key reference to User
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    
+    # Establish relationship with User
+    user = relationship("User", back_populates="places")
+    
+    # Establish one-to-many relationship with Review
+    reviews = relationship("Review", back_populates="place", cascade="all, delete-orphan")
+    
+    # Establish many-to-many relationship with Amenity
+    amenities = relationship("Amenity", secondary=place_amenity, back_populates="places")
+    
+    @validates('title')
+    def validate_title(self, key, title):
+        """Validate the title"""
+        if not title or len(title.strip()) == 0:
+            raise ValueError("Title cannot be empty")
+        if len(title) > 128:
+            raise ValueError("Title cannot exceed 128 characters")
+        return title
+        
+    @validates('price')
+    def validate_price(self, key, price):
+        """Validate the price"""
+        if price is None:
+            raise ValueError("Price cannot be empty")
+        if price < 0:
             raise ValueError("Price cannot be negative")
-        self._price = float(value)
-
-    @property
-    def latitude(self):
-        return self._latitude
-
-    @latitude.setter
-    def latitude(self, value):
-        if not isinstance(value, (int, float)):
-            raise ValueError("Latitude must be a number")
-        if value < -90 or value > 90:
-            raise ValueError("Latitude must be between -90 and 90")
-        self._latitude = float(value)
-
-    @property
-    def longitude(self):
-        return self._longitude
-
-    @longitude.setter
-    def longitude(self, value):
-        if not isinstance(value, (int, float)):
-            raise ValueError("Longitude must be a number")
-        if value < -180 or value > 180:
-            raise ValueError("Longitude must be between -180 and 180")
-        self._longitude = float(value)
-
-    def update(self, data):
-        if 'title' in data:
-            self.title = self._validate_string(data['title'], "Title", 100)
-        if 'description' in data:
-            self.description = self._validate_string(data['description'], "Description", 1000)
-        if 'price' in data:
-            self.price = data['price']
-        if 'latitude' in data:
-            self.latitude = data['latitude']
-        if 'longitude' in data:
-            self.longitude = data['longitude']
-        if 'owner_id' in data:
-            self.owner_id = data['owner_id']
-        if 'amenities' in data:
-            self.amenities = data['amenities']
-        super().update(data)
+        return price
+        
+    @validates('latitude', 'longitude')
+    def validate_coordinates(self, key, value):
+        """Validate the latitude and longitude"""
+        if value is None:
+            raise ValueError(f"{key} cannot be empty")
+        if not (-90 <= value <= 90) and key == 'latitude':
+            raise ValueError("Latitude must be between -90 and 90 degrees")
+        if not (-180 <= value <= 180) and key == 'longitude':
+            raise ValueError("Longitude must be between -180 and 180 degrees")
+        return value

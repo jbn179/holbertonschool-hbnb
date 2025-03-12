@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-#!/home/patri/holbertonschool-hbnb/part2/hbnb/venv/bin/python3
-=======
-#!/home/jbn/PROJETS/Hbnb_perso/OMGpart2/hbnb/venv/bin/python3
->>>>>>> origin/main
+#!/home/patri/holbertonschool-hbnb/part3/hbnb/venv/bin/python3.12
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -1,65 +1,63 @@
-from app.models.base_model import BaseModel
-<<<<<<< HEAD
-from app import bcrypt
+from app import db, bcrypt
+from app.models.basemodel import BaseModel
+from sqlalchemy.orm import validates, relationship
 import re
 
 class User(BaseModel):
-    def __init__(self, first_name, last_name, email, is_admin=False, password=None):
-=======
-import re
+    __tablename__ = 'users'
 
-class User(BaseModel):
-    def __init__(self, first_name, last_name, email, is_admin=False):
->>>>>>> origin/main
-        super().__init__()
-        self.first_name = self._validate_string(first_name, "First name", 50)
-        self.last_name = self._validate_string(last_name, "Last name", 50)
-        self.email = self._validate_email(email)
-        self.is_admin = is_admin
-<<<<<<< HEAD
-        self.password = None
-        if password:
-            self.hash_password(password)
-=======
->>>>>>> origin/main
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    password = db.Column(db.String(128), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    
+    # Establish one-to-many relationship with Place
+    places = relationship("Place", back_populates="user", cascade="all, delete-orphan")
+    
+    # Establish one-to-many relationship with Review
+    reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan")
 
-    def _validate_string(self, value, field_name, max_length):
-        if not isinstance(value, str) or len(value.strip()) == 0:
-            raise ValueError(f"{field_name} is required and must be a non-empty string")
-        if len(value) > max_length:
-            raise ValueError(f"{field_name} must be at most {max_length} characters long")
-        return value.strip()
-
-    def _validate_email(self, email):
-        if not isinstance(email, str) or len(email.strip()) == 0:
-            raise ValueError("Email is required and must be a non-empty string")
-        email = email.strip().lower()
-        email_regex = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-        if not email_regex.match(email):
-            raise ValueError("Invalid email format")
-        return email
-
-<<<<<<< HEAD
     def hash_password(self, password):
-        """Hashes the password before storing it."""
+        """Hash the password before storing it."""
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def verify_password(self, password):
-        """Verifies if the provided password matches the hashed password."""
+        """Verify the hashed password."""
         return bcrypt.check_password_hash(self.password, password)
-
-=======
->>>>>>> origin/main
-    def update(self, data):
-        if 'first_name' in data:
-            self.first_name = self._validate_string(data['first_name'], "First name", 50)
-        if 'last_name' in data:
-            self.last_name = self._validate_string(data['last_name'], "Last name", 50)
-        if 'email' in data:
-            self.email = self._validate_email(data['email'])
-<<<<<<< HEAD
-        if 'password' in data:
-            self.hash_password(data['password'])
-=======
->>>>>>> origin/main
-        super().update(data)
+        
+    @validates('first_name')
+    def validate_first_name(self, key, first_name):
+        """Validates the first name"""
+        if not first_name or len(first_name.strip()) == 0:
+            raise ValueError("First name cannot be empty")
+        if len(first_name) > 50:
+            raise ValueError("First name cannot exceed 50 characters")
+        return first_name
+        
+    @validates('last_name')
+    def validate_last_name(self, key, last_name):
+        """Validates the last name"""
+        if not last_name or len(last_name.strip()) == 0:
+            raise ValueError("Last name cannot be empty")
+        if len(last_name) > 50:
+            raise ValueError("Last name cannot exceed 50 characters")
+        return last_name
+        
+    @validates('email')
+    def validate_email(self, key, email):
+        """Validates the email address"""
+        if not email or len(email.strip()) == 0:
+            raise ValueError("Email cannot be empty")
+        # Simple regex for email validation
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            raise ValueError("Invalid email format")
+        return email
+        
+    @validates('password')
+    def validate_password(self, key, password):
+        """Validates the password before hashing"""
+        if not password or len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        # You could add other complexity rules here
+        return password
