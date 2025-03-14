@@ -1,18 +1,16 @@
-# ...existing code...
-
 def get_place_by_id(self, place_id):
     """
-    Récupère un lieu par son ID
+    Get a place by its ID
     
     Args:
-        place_id (str): L'ID du lieu à récupérer
+        place_id (str): The ID of the place to retrieve
         
     Returns:
-        Place ou None: L'objet Place s'il est trouvé, None sinon
+        Place or None: The Place object if found, None otherwise
     """
     from app.models.place import Place
     
-    # Version simplifiée sans relations
+    # Simplified version without relationships
     try:
         return Place.query.get(place_id)
     except Exception:
@@ -20,13 +18,13 @@ def get_place_by_id(self, place_id):
 
 def get_reviews_by_place(self, place_id):
     """
-    Récupère tous les avis pour un lieu spécifique
+    Get all reviews for a specific place
     
     Args:
-        place_id (str): L'ID du lieu pour lequel récupérer les avis
+        place_id (str): The ID of the place to get reviews for
         
     Returns:
-        list[Review]: Une liste d'objets Review liés au lieu, ou liste vide si aucun
+        list[Review]: A list of Review objects related to the place, or empty list if none
     """
     from app.models.review import Review
     
@@ -37,10 +35,10 @@ def get_reviews_by_place(self, place_id):
 
 def get_all_reviews(self):
     """
-    Récupère tous les avis
+    Get all reviews
     
     Returns:
-        list[Review]: Une liste de tous les objets Review
+        list[Review]: A list of all Review objects
     """
     from app.models.review import Review
     
@@ -51,17 +49,17 @@ def get_all_reviews(self):
 
 def create_review(self, data, current_user_id=None):
     """
-    Crée un nouvel avis
+    Create a new review
     
     Args:
-        data (dict): Les données pour créer l'avis
-        current_user_id (str, optional): L'ID de l'utilisateur actuel extrait du token JWT
+        data (dict): The data to create the review
+        current_user_id (str, optional): The current user ID extracted from JWT token
         
     Returns:
-        Review: L'objet Review créé
+        Review: The created Review object
         
     Raises:
-        ValueError: Si les données sont invalides
+        ValueError: If the data is invalid
     """
     from app.models.review import Review
     from app import db
@@ -70,11 +68,11 @@ def create_review(self, data, current_user_id=None):
     print(f"DEBUG FACADE - data: {data}, current_user_id: {current_user_id}")
     
     try:
-        # Valider les données requises
+        # Validate required data
         if not data.get('place_id'):
             raise ValueError("L'ID du lieu est requis")
             
-        # Utiliser l'ID utilisateur fourni par le token JWT ou celui dans les données
+        # Use current user ID from JWT token or from data
         user_id = current_user_id or data.get('user_id')
         if not user_id:
             raise ValueError("L'ID utilisateur est manquant")
@@ -83,7 +81,7 @@ def create_review(self, data, current_user_id=None):
         
         review = Review(
             text=data.get('text', ''),
-            rating=int(data.get('rating', 5)),  # Conversion explicite en int
+            rating=int(data.get('rating', 5)),  # Explicit conversion to int
             place_id=data.get('place_id'),
             user_id=user_id
         )
@@ -97,17 +95,17 @@ def create_review(self, data, current_user_id=None):
 
 def update_review(self, review_id, data):
     """
-    Met à jour un avis existant
+    Update an existing review
     
     Args:
-        review_id (str): L'ID de l'avis à mettre à jour
-        data (dict): Les nouvelles données de l'avis
+        review_id (str): The ID of the review to update
+        data (dict): The new review data
         
     Returns:
-        Review: L'objet Review mis à jour
+        Review: The updated Review object
         
     Raises:
-        ValueError: Si les données sont invalides ou si l'avis n'existe pas
+        ValueError: If the data is invalid or the review doesn't exist
     """
     from app import db
     
@@ -130,13 +128,13 @@ def update_review(self, review_id, data):
 
 def delete_review(self, review_id):
     """
-    Supprime un avis
+    Delete a review
     
     Args:
-        review_id (str): L'ID de l'avis à supprimer
+        review_id (str): The ID of the review to delete
         
     Raises:
-        ValueError: Si l'avis n'existe pas ou ne peut pas être supprimé
+        ValueError: If the review doesn't exist or cannot be deleted
     """
     from app import db
     
@@ -154,17 +152,17 @@ def delete_review(self, review_id):
 
 def get_review_by_id(self, review_id):
     """
-    Récupère un avis par son ID
+    Get a review by its ID
     
     Args:
-        review_id (str): L'ID de l'avis à récupérer
+        review_id (str): The ID of the review to retrieve
         
     Returns:
-        Review ou None: L'objet Review s'il est trouvé, None sinon
+        Review or None: The Review object if found, None otherwise
     """
     from app.models.review import Review
     
-    # Version simplifiée sans relations
+    # Simplified version without relationships
     try:
         return Review.query.get(review_id)
     except Exception:

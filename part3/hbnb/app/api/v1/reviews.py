@@ -131,10 +131,21 @@ class ReviewList(Resource):
             jwt_claims = get_jwt()
             is_admin = jwt_claims.get('is_admin', False)
             
-            print(f"DEBUG - User ID: {user_id}, Is Admin: {is_admin}")
-            
             # Get the review data from the request
             data = request.json
+            place_id = data.get('place_id', '')
+            
+            # AJOUT : Vérifier si l'utilisateur a déjà laissé une review pour ce lieu
+            from app.models.review import Review
+            existing_review = Review.query.filter_by(
+                user_id=user_id,
+                place_id=place_id
+            ).first()
+            
+            if existing_review:
+                return {
+                    'error': 'Vous avez déjà laissé une review pour ce lieu. Utilisez PUT pour la modifier.'
+                }, HTTPStatus.CONFLICT
             
             # MODIFICATION IMPORTANTE: Vérifier ou créer temporairement un utilisateur
             from app.models.user import User
@@ -159,11 +170,9 @@ class ReviewList(Resource):
             review_data = {
                 'text': data.get('text', ''),
                 'rating': data.get('rating', 5),
-                'place_id': data.get('place_id', ''),
+                'place_id': place_id,
                 'user_id': user_id  # Inclure directement l'ID utilisateur dans les données
             }
-            
-            print(f"DEBUG - Creating review with data: {review_data}")
             
             # Appel simplifié à la méthode de façade
             review = facade.create_review(review_data)
@@ -177,6 +186,13 @@ class ReviewList(Resource):
             print(f"Unexpected error: {str(e)}")
             import traceback
             print(traceback.format_exc())
+            
+            # AJOUT : Gestion spécifique de l'erreur de contrainte unique
+            if 'unique_user_place_review' in str(e):
+                return {
+                    'error': 'Vous avez déjà laissé une review pour ce lieu. Utilisez PUT pour la modifier.'
+                }, HTTPStatus.CONFLICT
+                
             return {'error': f"Unexpected error: {str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 @api.route('/<string:review_id>')

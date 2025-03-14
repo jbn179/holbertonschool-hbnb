@@ -1,12 +1,14 @@
 from app import db
 from app.models.basemodel import BaseModel
 from sqlalchemy.orm import validates, relationship
+from sqlalchemy import UniqueConstraint
 
 class Review(BaseModel):
     """Review model for place ratings and comments"""
     __tablename__ = 'reviews'
     
-    text = db.Column(db.String(1024), nullable=False)
+    id = db.Column(db.String(36), primary_key=True)
+    text = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     
     # Foreign key to User
@@ -20,6 +22,11 @@ class Review(BaseModel):
     
     # Relationship with Place
     place = relationship("Place", back_populates="reviews")
+    
+    # Add unique constraint
+    __table_args__ = (
+        UniqueConstraint('user_id', 'place_id', name='unique_user_place_review'),
+    )
     
     @validates('text')
     def validate_text(self, key, text):
@@ -36,12 +43,14 @@ class Review(BaseModel):
         if rating is None:
             raise ValueError("Rating cannot be empty")
         
-        # Essayer de convertir en int si ce n'est pas déjà un int
+        # Try to convert to int if not already an int
         try:
-            rating_int = int(rating)
+            # Handle both integer and float inputs (e.g. "4.7" should become 5)
+            rating_float = float(rating)
+            rating_int = round(rating_float)
         except (ValueError, TypeError):
-            raise ValueError("Rating must be convertible to an integer")
+            raise ValueError("Rating must be a number between 1 and 5")
         
         if rating_int < 1 or rating_int > 5:
             raise ValueError("Rating must be between 1 and 5")
-        return rating_int  # Retourner la version int
+        return rating_int  # Return the integer version

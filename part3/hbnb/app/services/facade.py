@@ -60,7 +60,7 @@ class HBnBFacade:
     
     def create_amenity(self, data):
         """Create a new amenity"""
-        # Validation explicite
+        # Validation explicite -> Explicit validation
         if 'name' not in data:
             raise ValueError("Missing required field: name")
         
@@ -70,18 +70,18 @@ class HBnBFacade:
         if not data['name'].strip():
             raise ValueError("Amenity name cannot be empty")
         
-        # Création de l'amenity
+        # Création de l'amenity -> Create the amenity
         new_amenity = Amenity(
             id=str(uuid.uuid4()),
             name=data['name'].strip()
         )
         
-        # Persist to database en utilisant le repository
+        # Persist to database en utilisant le repository -> Persist to database using the repository
         self.amenity_repo.add(new_amenity)
         
         return new_amenity
 
-    def get_amenity_by_id(self, amenity_id):
+    def get_amenity(self, amenity_id):
         """Gets an amenity by ID"""
         return self.amenity_repo.get(amenity_id)
 
@@ -91,7 +91,7 @@ class HBnBFacade:
 
     def update_amenity(self, amenity_id, data):
         """Updates an amenity"""
-        # Validation du nom si présent
+        # Validation du nom si présent -> Validate name if present
         if 'name' in data:
             if not isinstance(data['name'], str):
                 raise ValueError("Amenity name must be a string")
@@ -101,12 +101,8 @@ class HBnBFacade:
             
             data['name'] = data['name'].strip()
         
-        # Mise à jour de l'aménité
+        # Mise à jour de l'aménité -> Update the amenity
         return self.amenity_repo.update(amenity_id, data)
-
-    def get_amenity(self, amenity_id):
-        """Gets an amenity by ID"""
-        return self.amenity_repo.get(amenity_id)
 
     def find_amenity_by_name(self, name):
         """Finds an amenity by name"""
@@ -117,10 +113,10 @@ class HBnBFacade:
     def create_place(self, place_data):
         """Creates a new place after validating owner and amenities"""
         try:
-            # Cloner les données pour ne pas modifier l'original
+            # Cloner les données pour ne pas modifier l'original -> Clone data to avoid modifying the original
             place_data_copy = place_data.copy()
             
-            # Extraire les amenities de place_data pour les traiter séparément
+            # Extraire les amenities de place_data pour les traiter séparément -> Extract amenities from place_data to process separately
             amenities_ids = place_data_copy.pop('amenities', [])
             
             # Validate owner
@@ -167,10 +163,6 @@ class HBnBFacade:
         """Gets a place by ID"""
         return self.place_repo.get(place_id)
         
-    def get_place_by_id(self, place_id):
-        """Alias for get_place"""
-        return self.place_repo.get(place_id)
-
     def get_all_places(self):
         """Gets all places"""
         return self.place_repo.get_all()
@@ -232,7 +224,7 @@ class HBnBFacade:
         amenity_details = []
         if hasattr(place, 'amenities') and place.amenities:
             for amenity_id in place.amenities:
-                amenity = self.get_amenity_by_id(amenity_id)
+                amenity = self.get_amenity(amenity_id)
                 if amenity:
                     amenity_details.append({
                         'id': amenity.id,
@@ -297,7 +289,7 @@ class HBnBFacade:
             if not place_id:
                 raise ValueError("Place ID is required")
             
-            place = self.get_place_by_id(place_id)
+            place = self.get_place(place_id)
             if not place:
                 raise ValueError(f"Place with ID {place_id} does not exist")
             
@@ -335,10 +327,6 @@ class HBnBFacade:
         """Gets a review by ID"""
         return self.review_repo.get(review_id)
         
-    def get_review_by_id(self, review_id):
-        """Alias for get_review"""
-        return self.review_repo.get(review_id)
-
     def get_all_reviews(self):
         """Gets all reviews"""
         return self.review_repo.get_all()

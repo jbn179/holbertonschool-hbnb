@@ -17,7 +17,7 @@ class User(BaseModel):
     places = relationship("Place", back_populates="user", cascade="all, delete-orphan")
     
     # Establish one-to-many relationship with Review
-    reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan")
+    reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan", lazy='dynamic')
 
     def hash_password(self, password):
         """Hash the password before storing it."""
