@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask_restx import Namespace, Resource, fields
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.services.facade import facade
 from http import HTTPStatus
 from flask import Blueprint, request, jsonify
@@ -24,22 +24,28 @@ class AmenityList(Resource):
     @jwt_required()
     def post(self):
         """Create a new amenity (admin only)"""
-        # Check admin privileges
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin', False):
-            return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
-            
         try:
-            amenity_data = api.payload
-            new_amenity = facade.create_amenity(amenity_data)
-            return {
-                'id': new_amenity.id,
-                'name': new_amenity.name,
-                'created_at': new_amenity.created_at.isoformat() if isinstance(new_amenity.created_at, datetime) else str(new_amenity.created_at),
-                'updated_at': new_amenity.updated_at.isoformat() if isinstance(new_amenity.updated_at, datetime) else str(new_amenity.updated_at)
-            }, HTTPStatus.CREATED
-        except ValueError as e:
-            return {'error': str(e)}, HTTPStatus.BAD_REQUEST
+            claims = get_jwt()
+            if not claims.get('is_admin', False):
+                return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
+                
+            data = request.json
+            
+            # Vérification explicite du type de 'name' avant d'appeler facade.create_amenity
+            if 'name' not in data:
+                return {'error': 'Missing required field: name'}, HTTPStatus.BAD_REQUEST
+            
+            if not isinstance(data['name'], str):
+                return {'error': 'Amenity name must be a string'}, HTTPStatus.BAD_REQUEST
+            
+            # Création de l'amenity
+            amenity = facade.create_amenity(data)
+            return {'id': amenity.id, 'name': amenity.name}, HTTPStatus.CREATED
+        except Exception as e:
+            print(f"Error creating amenity: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {'error': str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
     @api.response(200, 'List of amenities retrieved successfully')
     def get(self):
@@ -82,8 +88,8 @@ class AmenityResource(Resource):
     def put(self, amenity_id):
         """Update amenity details (admin only)"""
         # Check admin privileges
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin', False):
+        claims = get_jwt()
+        if not claims.get('is_admin', False):
             return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
             
         try:
@@ -91,6 +97,7 @@ class AmenityResource(Resource):
             updated_amenity = facade.update_amenity(amenity_id, amenity_data)
             if not updated_amenity:
                 return {'error': 'Amenity not found'}, HTTPStatus.NOT_FOUND
+            
             return {
                 'id': updated_amenity.id,
                 'name': updated_amenity.name,
@@ -99,26 +106,10 @@ class AmenityResource(Resource):
             }, HTTPStatus.OK
         except ValueError as e:
             return {'error': str(e)}, HTTPStatus.BAD_REQUEST
-
-    @api.response(204, 'Amenity deleted successfully')
-    @api.response(404, 'Amenity not found')
-    @api.response(401, 'Unauthorized - Missing or invalid token')
-    @api.response(403, 'Forbidden - Admin privileges required')
-    @jwt_required()
-    def delete(self, amenity_id):
-        """Delete an amenity (admin only)"""
-        # Check admin privileges
-        current_user = get_jwt_identity()
-        if not current_user.get('is_admin', False):
-            return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
-            
-        try:
-            result = facade.delete_amenity(amenity_id)
-            if not result:
-                return {'error': 'Amenity not found'}, HTTPStatus.NOT_FOUND
-            return '', HTTPStatus.NO_CONTENT
-        except ValueError as e:
-            return {'error': str(e)}, HTTPStatus.BAD_REQUEST
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return {'error': f"An unexpected error occurred: {str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 amenities_bp = Blueprint('amenities', __name__)
 

@@ -35,8 +35,13 @@ class Review(BaseModel):
         """Validate review rating"""
         if rating is None:
             raise ValueError("Rating cannot be empty")
-        if not isinstance(rating, int):
-            raise ValueError("Rating must be an integer")
-        if rating < 1 or rating > 5:
+        
+        # Essayer de convertir en int si ce n'est pas déjà un int
+        try:
+            rating_int = int(rating)
+        except (ValueError, TypeError):
+            raise ValueError("Rating must be convertible to an integer")
+        
+        if rating_int < 1 or rating_int > 5:
             raise ValueError("Rating must be between 1 and 5")
-        return rating
+        return rating_int  # Retourner la version int

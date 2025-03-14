@@ -1,10 +1,89 @@
 from flask_restx import Namespace, Resource, fields
-from flask import request
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.services.facade import facade
+from flask import request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from app.services.facade import facade, HBnBFacade  # Correction ici (n minuscule)
 from http import HTTPStatus
 
 api = Namespace('reviews', description='Review operations')
+
+# Ajouter cette fonction au début du fichier, après les imports
+
+def format_review_response(review):
+    """Format a review object as a response dictionary with detailed information"""
+    # Base response that always works
+    response = {
+        'id': review.id,
+        'text': review.text,
+        'rating': review.rating,
+        'place_id': review.place_id,
+        'user_id': review.user_id,
+        'created_at': str(review.created_at)
+    }
+    
+    # Add updated_at if available
+    if hasattr(review, 'updated_at'):
+        response['updated_at'] = str(review.updated_at)
+    
+    # Add place details - récupération directe via la façade si nécessaire
+    place_info = {'id': review.place_id}
+    try:
+        # Essai d'accès via la relation
+        place = getattr(review, 'place', None)
+        
+        # Si la relation n'existe pas ou si l'accès échoue, récupérer via la façade
+        if not place:
+            place = facade.get_place_by_id(review.place_id)
+            
+        if place:
+            # Récupérer les attributs de base que toutes les places devraient avoir
+            place_info['id'] = place.id
+            
+            # Tenter d'obtenir d'autres attributs utiles
+            if hasattr(place, 'title'):
+                place_info['title'] = place.title
+            if hasattr(place, 'name'):
+                place_info['name'] = place.name
+            if hasattr(place, 'description'):
+                desc = place.description
+                place_info['description'] = (desc[:100] + '...') if len(desc) > 100 else desc
+            if hasattr(place, 'price_per_night'):
+                place_info['price'] = place.price_per_night
+            if hasattr(place, 'address'):
+                place_info['address'] = place.address
+            
+            response['place'] = place_info
+    except Exception as e:
+        print(f"Error adding place details: {str(e)}")
+        response['place'] = place_info  # Toujours inclure au moins l'ID
+    
+    # Add user details - récupération directe via la façade si nécessaire
+    user_info = {'id': review.user_id}
+    try:
+        # Essai d'accès via la relation
+        user = getattr(review, 'user', None)
+        
+        # Si la relation n'existe pas ou si l'accès échoue, récupérer via la façade
+        if not user:
+            user = facade.get_user_by_id(review.user_id)
+            
+        if user:
+            # Récupérer les attributs de base que tous les utilisateurs devraient avoir
+            user_info['id'] = user.id
+            
+            # Tenter d'obtenir d'autres attributs utiles
+            if hasattr(user, 'first_name'):
+                user_info['first_name'] = user.first_name
+            if hasattr(user, 'last_name'):
+                user_info['last_name'] = user.last_name
+            if hasattr(user, 'email'):
+                user_info['email'] = user.email
+            
+            response['user'] = user_info
+    except Exception as e:
+        print(f"Error adding user details: {str(e)}")
+        response['user'] = user_info  # Toujours inclure au moins l'ID
+    
+    return response
 
 # Define the review model for input validation
 review_model = api.model('Review', {
@@ -37,68 +116,68 @@ class ReviewList(Resource):
     def get(self):
         """Get all reviews"""
         reviews = facade.get_all_reviews()
-        return [{
-            'id': review.id,
-            'text': review.text,
-            'rating': review.rating,
-            'place_id': review.place_id,
-            'user_id': review.user_id,
-            'created_at': str(review.created_at),
-            'updated_at': str(review.updated_at)
-        } for review in reviews], HTTPStatus.OK
+        return [format_review_response(review) for review in reviews], HTTPStatus.OK
 
     @api.doc('create_review')
     @api.expect(review_model)
-    @api.response(201, 'Review created successfully', review_response)
-    @api.response(400, 'Invalid input or review constraints not met')
-    @api.response(401, 'Unauthorized - Missing or invalid token')
-    @api.response(404, 'Place not found')
     @jwt_required()
     def post(self):
         """Create a new review (requires authentication)"""
-        # Get the current user's identity from the JWT token
-        current_user = get_jwt_identity()
-        user_id = current_user['id']
-        
-        # Get the review data from the request
-        data = request.json
-        place_id = data.get('place_id')
-        
-        # Validate place exists
-        place = facade.get_place_by_id(place_id)
-        if not place:
-            return {'error': 'Place not found'}, HTTPStatus.NOT_FOUND
-        
-        # Check constraint 1: Users cannot review their own places
-        if place.owner_id == user_id:
-            return {'error': 'You cannot review your own place'}, HTTPStatus.BAD_REQUEST
-        
-        # Check constraint 2: Users can only leave one review per place
-        existing_reviews = facade.get_reviews_by_place(place_id)
-        for review in existing_reviews:
-            if review.user_id == user_id:
-                return {'error': 'You have already reviewed this place'}, HTTPStatus.BAD_REQUEST
-        
-        # Add user_id to the review data
-        data['user_id'] = user_id
-        
         try:
-            # Create the review
-            review = facade.create_review(data)
+            # Obtenir l'identité de l'utilisateur (sub)
+            user_id = get_jwt_identity()
             
-            # Return the created review
-            return {
-                'id': review.id,
-                'text': review.text,
-                'rating': review.rating,
-                'place_id': review.place_id,
-                'user_id': review.user_id,
-                'created_at': str(review.created_at),
-                'updated_at': str(review.updated_at)
-            }, HTTPStatus.CREATED
+            # Obtenir les claims complets du JWT pour accéder à is_admin
+            jwt_claims = get_jwt()
+            is_admin = jwt_claims.get('is_admin', False)
+            
+            print(f"DEBUG - User ID: {user_id}, Is Admin: {is_admin}")
+            
+            # Get the review data from the request
+            data = request.json
+            
+            # MODIFICATION IMPORTANTE: Vérifier ou créer temporairement un utilisateur
+            from app.models.user import User
+            from app import db
+            
+            # Chercher l'utilisateur du token JWT dans la base de données
+            user = User.query.get(user_id)
+            if not user:
+                # L'utilisateur n'existe pas, le créer temporairement
+                print(f"User {user_id} does not exist, creating temporary user")
+                new_user = User(
+                    id=user_id,
+                    email=f"auto_{user_id[:8]}@example.com",
+                    first_name="Temporary",
+                    last_name="User"
+                )
+                db.session.add(new_user)
+                db.session.commit()
+                user = new_user
+            
+            # Créer la review avec tous les champs requis
+            review_data = {
+                'text': data.get('text', ''),
+                'rating': data.get('rating', 5),
+                'place_id': data.get('place_id', ''),
+                'user_id': user_id  # Inclure directement l'ID utilisateur dans les données
+            }
+            
+            print(f"DEBUG - Creating review with data: {review_data}")
+            
+            # Appel simplifié à la méthode de façade
+            review = facade.create_review(review_data)
+            
+            # Return the created review with enriched data
+            return format_review_response(review), HTTPStatus.CREATED
             
         except ValueError as e:
             return {'error': str(e)}, HTTPStatus.BAD_REQUEST
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            return {'error': f"Unexpected error: {str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 @api.route('/<string:review_id>')
 @api.param('review_id', 'The review identifier')
@@ -112,15 +191,7 @@ class ReviewResource(Resource):
         if not review:
             return {'error': 'Review not found'}, HTTPStatus.NOT_FOUND
             
-        return {
-            'id': review.id,
-            'text': review.text,
-            'rating': review.rating,
-            'place_id': review.place_id,
-            'user_id': review.user_id,
-            'created_at': str(review.created_at),
-            'updated_at': str(review.updated_at)
-        }, HTTPStatus.OK
+        return format_review_response(review), HTTPStatus.OK
 
     @api.doc('update_review')
     @api.expect(review_model)
@@ -132,10 +203,14 @@ class ReviewResource(Resource):
     @jwt_required()
     def put(self, review_id):
         """Update a review (author or admin only)"""
-        # Get current user from token
-        current_user = get_jwt_identity()
-        user_id = current_user.get('id')
-        is_admin = current_user.get('is_admin', False)
+        # Obtenir l'identité de l'utilisateur (sub)
+        user_id = get_jwt_identity()
+        
+        # Obtenir les claims complets du JWT pour accéder à is_admin
+        jwt_claims = get_jwt()
+        is_admin = jwt_claims.get('is_admin', False)
+        
+        print(f"DEBUG - Update method: User ID: {user_id}, Is Admin: {is_admin}")
         
         # Get review and check if it exists
         review = facade.get_review_by_id(review_id)
@@ -151,14 +226,8 @@ class ReviewResource(Resource):
             review_data = api.payload
             updated_review = facade.update_review(review_id, review_data)
             
-            # Return the updated review
-            return {
-                'id': updated_review.id,
-                'text': updated_review.text,
-                'rating': updated_review.rating,
-                # Add other fields as needed
-                'updated_at': updated_review.updated_at.isoformat()
-            }, HTTPStatus.OK
+            # Return the updated review with enriched data
+            return format_review_response(updated_review), HTTPStatus.OK
         except ValueError as e:
             return {'error': str(e)}, HTTPStatus.BAD_REQUEST
     
@@ -170,10 +239,14 @@ class ReviewResource(Resource):
     @jwt_required()
     def delete(self, review_id):
         """Delete a review (author or admin only)"""
-        # Get current user from token
-        current_user = get_jwt_identity()
-        user_id = current_user.get('id')
-        is_admin = current_user.get('is_admin', False)
+        # Obtenir l'identité de l'utilisateur (sub)
+        user_id = get_jwt_identity()
+        
+        # Obtenir les claims complets du JWT pour accéder à is_admin
+        jwt_claims = get_jwt()
+        is_admin = jwt_claims.get('is_admin', False)
+        
+        print(f"DEBUG - Delete method: User ID: {user_id}, Is Admin: {is_admin}")
         
         # Get review and check if it exists
         review = facade.get_review_by_id(review_id)
@@ -186,7 +259,11 @@ class ReviewResource(Resource):
             
         # Delete the review (admins can delete any review)
         try:
-            facade.delete_review(review_id)
-            return '', HTTPStatus.NO_CONTENT
+            # IMPORTANT: Passer l'ID de l'utilisateur courant comme deuxième paramètre
+            result = facade.delete_review(review_id, user_id)
+            if result:
+                return '', HTTPStatus.NO_CONTENT
+            else:
+                return {'error': 'Failed to delete review'}, HTTPStatus.BAD_REQUEST
         except ValueError as e:
             return {'error': str(e)}, HTTPStatus.BAD_REQUEST

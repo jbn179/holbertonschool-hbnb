@@ -1,4 +1,6 @@
 from app import db
+import uuid
+from datetime import datetime
 from app.models.basemodel import BaseModel
 from sqlalchemy.orm import validates, relationship
 from app.models.associations import place_amenity
@@ -7,23 +9,23 @@ class Place(BaseModel):
     """Place model representing a rental property"""
     __tablename__ = 'places'
     
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(128), nullable=False)
-    description = db.Column(db.String(1024), nullable=True)
+    description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
-    
-    # Foreign key reference to User
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Establish relationship with User
+    # Relation many-to-many avec Amenity
+    amenities = db.relationship('Amenity', secondary=place_amenity, 
+                               lazy='subquery', backref=db.backref('places', lazy=True))
+    
+    # Autres relations
     user = relationship("User", back_populates="places")
-    
-    # Establish one-to-many relationship with Review
     reviews = relationship("Review", back_populates="place", cascade="all, delete-orphan")
-    
-    # Establish many-to-many relationship with Amenity
-    amenities = relationship("Amenity", secondary=place_amenity, back_populates="places")
     
     @validates('title')
     def validate_title(self, key, title):

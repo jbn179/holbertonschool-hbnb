@@ -8,6 +8,7 @@ from app.persistence.place_repository import PlaceRepository
 from app.persistence.amenity_repository import AmenityRepository
 from app.persistence.review_repository import ReviewRepository
 from datetime import datetime
+import uuid
 
 class HBnBFacade:
     def __init__(self):
@@ -57,11 +58,28 @@ class HBnBFacade:
     
     # ========== AMENITY METHODS ==========
     
-    def create_amenity(self, name):
-        """Creates a new amenity"""
-        amenity = Amenity(name=name)
-        self.amenity_repo.add(amenity)
-        return amenity
+    def create_amenity(self, data):
+        """Create a new amenity"""
+        # Validation explicite
+        if 'name' not in data:
+            raise ValueError("Missing required field: name")
+        
+        if not isinstance(data['name'], str):
+            raise ValueError("Amenity name must be a string")
+        
+        if not data['name'].strip():
+            raise ValueError("Amenity name cannot be empty")
+        
+        # Création de l'amenity
+        new_amenity = Amenity(
+            id=str(uuid.uuid4()),
+            name=data['name'].strip()
+        )
+        
+        # Persist to database en utilisant le repository
+        self.amenity_repo.add(new_amenity)
+        
+        return new_amenity
 
     def get_amenity_by_id(self, amenity_id):
         """Gets an amenity by ID"""
@@ -73,43 +91,77 @@ class HBnBFacade:
 
     def update_amenity(self, amenity_id, data):
         """Updates an amenity"""
+        # Validation du nom si présent
+        if 'name' in data:
+            if not isinstance(data['name'], str):
+                raise ValueError("Amenity name must be a string")
+            
+            if not data['name'].strip():
+                raise ValueError("Amenity name cannot be empty")
+            
+            data['name'] = data['name'].strip()
+        
+        # Mise à jour de l'aménité
         return self.amenity_repo.update(amenity_id, data)
+
+    def get_amenity(self, amenity_id):
+        """Gets an amenity by ID"""
+        return self.amenity_repo.get(amenity_id)
 
     def find_amenity_by_name(self, name):
         """Finds an amenity by name"""
         return self.amenity_repo.find_by_name(name)
     
-    def delete_amenity(self, amenity_id, current_user_id):
-        """Only administrators can delete amenities"""
-        current_user = self.user_repo.get(current_user_id)
-        if current_user and current_user.is_admin:
-            return self.amenity_repo.delete(amenity_id)
-        return False
-
     # ========== PLACE METHODS ==========
     
     def create_place(self, place_data):
         """Creates a new place after validating owner and amenities"""
-        # Validate owner
-        owner_id = place_data.get('owner_id')
-        owner = self.get_user_by_id(owner_id)
-        if not owner:
-            raise ValueError(f"Owner with ID {owner_id} does not exist")
-
-        # Validate amenities if provided
-        if 'amenities' in place_data and place_data['amenities']:
-            valid_amenities = []
-            for amenity_id in place_data['amenities']:
-                amenity = self.get_amenity_by_id(amenity_id)
-                if not amenity:
-                    raise ValueError(f"Amenity with ID {amenity_id} does not exist")
-                valid_amenities.append(amenity_id)
-            place_data['amenities'] = valid_amenities
-    
-        # Create and save the place
-        place = Place(**place_data)
-        self.place_repo.add(place)
-        return place
+        try:
+            # Cloner les données pour ne pas modifier l'original
+            place_data_copy = place_data.copy()
+            
+            # Extraire les amenities de place_data pour les traiter séparément
+            amenities_ids = place_data_copy.pop('amenities', [])
+            
+            # Validate owner
+            user_id = place_data_copy.get('user_id')
+            if not user_id:
+                raise ValueError("User ID is required")
+                
+            owner = self.get_user_by_id(user_id)
+            if not owner:
+                raise ValueError(f"User with ID {user_id} does not exist")
+                
+            # Generate ID if not provided
+            if 'id' not in place_data_copy:
+                place_data_copy['id'] = str(uuid.uuid4())
+            
+            # Set timestamps if not provided
+            now = datetime.utcnow()
+            if 'created_at' not in place_data_copy:
+                place_data_copy['created_at'] = now
+            if 'updated_at' not in place_data_copy:
+                place_data_copy['updated_at'] = now
+        
+            # Create the place first without amenities
+            place = Place(**place_data_copy)
+            
+            # Add amenities to the place if any
+            if amenities_ids:
+                for amenity_id in amenities_ids:
+                    amenity = self.get_amenity(amenity_id)
+                    if not amenity:
+                        raise ValueError(f"Amenity with ID {amenity_id} does not exist")
+                    place.amenities.append(amenity)
+            
+            # Save the place with its amenities
+            self.place_repo.add(place)
+            return place
+        except Exception as e:
+            print(f"Error in create_place: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise  # Re-raise the exception after logging
 
     def get_place(self, place_id):
         """Gets a place by ID"""
@@ -128,26 +180,36 @@ class HBnBFacade:
         place = self.get_place(place_id)
         if not place:
             return None
-    
+        
+        # Extraire les amenities si présentes pour les traiter séparément
+        amenities_ids = None
+        if 'amenities' in place_data:
+            amenities_ids = place_data.pop('amenities')
+        
         # Validate owner if changed
-        if 'owner_id' in place_data:
-            owner = self.get_user_by_id(place_data.get('owner_id'))
+        if 'user_id' in place_data:
+            owner = self.get_user_by_id(place_data.get('user_id'))
             if not owner:
-                raise ValueError(f"Owner with ID {place_data.get('owner_id')} does not exist")
-    
-        # Validate amenities if changed
-        if 'amenities' in place_data and place_data['amenities']:
-            valid_amenities = []
-            for amenity_id in place_data['amenities']:
-                amenity = self.get_amenity_by_id(amenity_id)
+                raise ValueError(f"User with ID {place_data.get('user_id')} does not exist")
+        
+        # Update amenities if provided
+        if amenities_ids is not None:
+            # Clear existing amenities
+            place.amenities = []
+            
+            # Add new amenities
+            for amenity_id in amenities_ids:
+                amenity = self.get_amenity(amenity_id)
                 if not amenity:
                     raise ValueError(f"Amenity with ID {amenity_id} does not exist")
-                valid_amenities.append(amenity_id)
-            place_data['amenities'] = valid_amenities
-    
-        # Update the place
-        self.place_repo.update(place_id, place_data)
-        return self.get_place(place_id)
+                place.amenities.append(amenity)
+        
+        # Update other fields
+        for key, value in place_data.items():
+            setattr(place, key, value)
+        
+        self.place_repo.update(place_id, {})  # Empty dict because we've already updated the place object
+        return place
 
     def get_place_with_details(self, place_id):
         """Gets a place with details about owner, amenities, and reviews"""
@@ -204,12 +266,10 @@ class HBnBFacade:
             'updated_at': place.updated_at if isinstance(place.updated_at, str) else place.updated_at.isoformat() if isinstance(place.updated_at, datetime) else str(place.updated_at)
         }
 
-    def delete_place(self, place_id, current_user_id):
-        """Only administrators can delete places"""
-        current_user = self.user_repo.get(current_user_id)
-        if current_user and current_user.is_admin:
-            return self.place_repo.delete(place_id)
-        return False
+    def delete_place(self, place_id):
+        """Delete a place"""
+        # La vérification d'autorisation est déjà faite dans l'API
+        return self.place_repo.delete(place_id)
         
     def find_places_by_price_range(self, min_price, max_price):
         """Finds places within a price range"""
@@ -219,20 +279,57 @@ class HBnBFacade:
     
     def create_review(self, review_data):
         """Creates a new review after validation"""
-        # Validate user
-        user = self.get_user_by_id(review_data.get('user_id'))
-        if not user:
-            raise ValueError(f"User with ID {review_data.get('user_id')} does not exist")
-        
-        # Validate place
-        place = self.get_place(review_data.get('place_id'))
-        if not place:
-            raise ValueError(f"Place with ID {review_data.get('place_id')} does not exist")
-        
-        # Create and save the review
-        review = Review(**review_data)
-        self.review_repo.add(review)
-        return review
+        try:
+            # Clone the data to avoid modifying the original
+            data = review_data.copy()
+            
+            # Validate user
+            user_id = data.get('user_id')
+            if not user_id:
+                raise ValueError("User ID is required")
+            
+            user = self.get_user_by_id(user_id)
+            if not user:
+                raise ValueError(f"User with ID {user_id} does not exist")
+            
+            # Validate place
+            place_id = data.get('place_id')
+            if not place_id:
+                raise ValueError("Place ID is required")
+            
+            place = self.get_place_by_id(place_id)
+            if not place:
+                raise ValueError(f"Place with ID {place_id} does not exist")
+            
+            # Generate ID if not provided
+            if 'id' not in data:
+                data['id'] = str(uuid.uuid4())
+            
+            # Set timestamps
+            now = datetime.utcnow()
+            data['created_at'] = now
+            data['updated_at'] = now
+            
+            # Create review instance
+            from app.models.review import Review
+            new_review = Review(
+                id=data['id'],
+                user_id=data['user_id'],
+                place_id=data['place_id'],
+                text=data['text'],
+                rating=float(data['rating']),
+                created_at=data['created_at'],
+                updated_at=data['updated_at']
+            )
+            
+            # Add to database
+            self.review_repo.add(new_review)
+            return new_review
+        except Exception as e:
+            print(f"Error in create_review: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise  # Re-raise to let the endpoint handle it
 
     def get_review(self, review_id):
         """Gets a review by ID"""

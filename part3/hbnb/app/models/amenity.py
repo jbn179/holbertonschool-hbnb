@@ -1,22 +1,29 @@
 from app import db
+import uuid
+from datetime import datetime
 from app.models.basemodel import BaseModel
 from sqlalchemy.orm import validates, relationship
 from app.models.associations import place_amenity
 
-class Amenity(BaseModel):
+class Amenity(db.Model):
     """Amenity model representing facilities available in places"""
     __tablename__ = 'amenities'
     
-    name = db.Column(db.String(50), nullable=False, unique=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(128), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Establish many-to-many relationship with Place
-    places = relationship("Place", secondary=place_amenity, back_populates="amenities")
+    # La relation many-to-many avec Place est déjà définie via backref dans le modèle Place
 
     @validates('name')
     def validate_name(self, key, name):
-        """Validate amenity name"""
+        """Validates the amenity name"""
+        # Vérifiez d'abord que name est une chaîne
+        if not isinstance(name, str):
+            raise ValueError("Amenity name must be a string")
+            
+        # Maintenant, vous pouvez appliquer strip() en toute sécurité
         if not name or len(name.strip()) == 0:
             raise ValueError("Amenity name cannot be empty")
-        if len(name) > 50:
-            raise ValueError("Amenity name cannot exceed 50 characters")
         return name
