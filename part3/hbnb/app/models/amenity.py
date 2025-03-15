@@ -1,18 +1,24 @@
-from .base_model import BaseModel
+from app import db
+from app.models.base_model import BaseModel
+from sqlalchemy.orm import validates, relationship
+from app.models.associations import place_amenity
 
 class Amenity(BaseModel):
-    def __init__(self, name):
-        super().__init__()
-        self.name = self._validate_name(name)
+    __tablename__ = 'amenities'
 
-    def _validate_name(self, name):
-        if not isinstance(name, str) or len(name.strip()) == 0:
+    name = db.Column(db.String(50), nullable=False)
+    
+    # Relationships
+    places = relationship("Place", secondary=place_amenity, back_populates="amenities")
+
+    @validates('name')
+    def validate_name(self, key, value):
+        if not isinstance(value, str) or len(value.strip()) == 0:
             raise ValueError("Amenity name is required and must be a non-empty string")
-        if len(name) > 50:
+        if len(value) > 50:
             raise ValueError("Amenity name must be at most 50 characters long")
-        return name
+        return value.strip()
 
     def update(self, data):
-        if 'name' in data:
-            data['name'] = self._validate_name(data['name'])
+        """Update the attributes of the amenity"""
         super().update(data)

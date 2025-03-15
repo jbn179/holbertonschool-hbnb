@@ -1,8 +1,8 @@
-<<<<<<< HEAD
-from app.persistence.sqlalchemy_repository import SQLAlchemyRepository
-=======
-from app.persistence.repository import InMemoryRepository
->>>>>>> origin/main
+from app.persistence.repository import SQLAlchemyRepository
+from app.persistence.user_repository import UserRepository
+from app.persistence.place_repository import PlaceRepository
+from app.persistence.review_repository import ReviewRepository
+from app.persistence.amenity_repository import AmenityRepository
 from app.models.user import User
 from app.models.amenity import Amenity
 from app.models.place import Place
@@ -10,45 +10,30 @@ from app.models.review import Review
 
 class HBnBFacade:
     def __init__(self):
-<<<<<<< HEAD
-        self.user_repo = SQLAlchemyRepository(User)  # Switched to SQLAlchemyRepository
-        self.place_repo = SQLAlchemyRepository(Place)
-        self.review_repo = SQLAlchemyRepository(Review)
-        self.amenity_repo = SQLAlchemyRepository(Amenity)
-=======
-        self.user_repository = SQLAlchemyRepository(User)  # Switched to SQLAlchemyRepository
-        self.place_repository = SQLAlchemyRepository(Place)
-        self.review_repository = SQLAlchemyRepository(Review)
-        self.amenity_repository = SQLAlchemyRepository(Amenity)
->>>>>>> origin/main
+        self.user_repo = UserRepository()
+        self.place_repo = PlaceRepository()
+        self.review_repo = ReviewRepository()
+        self.amenity_repo = AmenityRepository()
 
 # User methods
     def create_user(self, user_data):
-        user = User(**user_data)
-        self.user_repo.add(user)
-        return user
+        return self.user_repo.create_user(user_data)
 
     def get_user(self, user_id):
         return self.user_repo.get(user_id)
 
-    def get_user_by_email(self, email):
-        return self.user_repo.get_by_attribute('email', email)
+    def get_by_email(self, email):
+        return self.user_repo.get_by_email(email)
 
     def get_all_users(self):
         return self.user_repo.get_all()
 
     def update_user(self, user_id, user_data):
-        user = self.get_user(user_id)
-        if not user:
-            return None
-        self.user_repo.update(user_id, user_data)
-        return self.get_user(user_id)
+        return self.user_repo.update_user(user_id, user_data)
 
 # Amenities methods
     def create_amenity(self, amenity_data):
-        amenity = Amenity(**amenity_data)
-        self.amenity_repo.add(amenity)
-        return amenity
+        return self.amenity_repo.create_amenity(amenity_data)
 
     def get_amenity(self, amenity_id):
         return self.amenity_repo.get(amenity_id)
@@ -57,32 +42,19 @@ class HBnBFacade:
         return self.amenity_repo.get_all()
 
     def update_amenity(self, amenity_id, amenity_data):
-        amenity = self.get_amenity(amenity_id)
-        if not amenity:
-            return None
-        self.amenity_repo.update(amenity_id, amenity_data)
-        return self.get_amenity(amenity_id)
+        return self.amenity_repo.update_amenity(amenity_id, amenity_data)
     
 # Place methods
     def create_place(self, place_data):
         """
         Creates a new place after validating owner and amenities
         """
-    # Debug
-        print(f"Creating place with data: {place_data}")
-    
         # Validate owner exists
         owner_id = place_data.get('owner_id')
-        print(f"Looking for owner with ID: {owner_id}")
-    
         owner = self.get_user(owner_id)
         if not owner:
-            error_msg = f"Owner with ID {owner_id} does not exist"
-            print(f"Error: {error_msg}")
-            raise ValueError(error_msg)
+            raise ValueError(f"Owner with ID {owner_id} does not exist")
     
-        print(f"Owner found: {owner.first_name} {owner.last_name}")
-
         # Validate amenities if provided
         if 'amenities' in place_data and place_data['amenities']:
             valid_amenities = []
@@ -94,9 +66,7 @@ class HBnBFacade:
             place_data['amenities'] = valid_amenities
     
         # Create and save place
-        place = Place(**place_data)
-        self.place_repo.add(place)
-        return place
+        return self.place_repo.create_place(place_data)
 
     def get_place(self, place_id):
         """
@@ -135,8 +105,7 @@ class HBnBFacade:
             place_data['amenities'] = valid_amenities
     
         # Update place
-        self.place_repo.update(place_id, place_data)
-        return self.get_place(place_id)
+        return self.place_repo.update_place(place_id, place_data)
 
     def get_place_with_details(self, place_id):
         """
@@ -147,7 +116,7 @@ class HBnBFacade:
             return None
     
         # Get owner details
-        owner = self.get_user(place.owner_id)
+        owner = place.owner
         owner_details = None
         if owner:
             owner_details = {
@@ -155,17 +124,15 @@ class HBnBFacade:
                 'first_name': owner.first_name,
                 'last_name': owner.last_name,
                 'email': owner.email
-        }
+            }
     
         # Get amenities details
         amenity_details = []
-        for amenity_id in place.amenities:
-            amenity = self.get_amenity(amenity_id)
-            if amenity:
-                amenity_details.append({
-                    'id': amenity.id,
-                    'name': amenity.name
-                })
+        for amenity in place.amenities:
+            amenity_details.append({
+                'id': amenity.id,
+                'name': amenity.name
+            })
     
         # Create detailed response with all place info
         return {
@@ -181,6 +148,18 @@ class HBnBFacade:
             'updated_at': place.updated_at
         }
     
+    def delete_place(self, place_id):
+        """
+        Deletes a place and all its associated reviews
+        """
+        place = self.get_place(place_id)
+        if not place:
+            return False
+        
+        # Delete the place
+        self.place_repo.delete(place_id)
+        return True
+
 # Review methods
     def create_review(self, review_data):
         """
@@ -197,9 +176,7 @@ class HBnBFacade:
             raise ValueError(f"Place with ID {review_data.get('place_id')} does not exist")
         
         # Create and save review
-        review = Review(**review_data)
-        self.review_repo.add(review)
-        return review
+        return self.review_repo.create_review(review_data)
 
     def get_review(self, review_id):
         """
@@ -222,9 +199,8 @@ class HBnBFacade:
         if not place:
             return None
         
-        # Filter reviews by place_id
-        all_reviews = self.get_all_reviews()
-        return [review for review in all_reviews if review.place_id == place_id]
+        # Get reviews directly from the relationship
+        return place.reviews
 
     def update_review(self, review_id, review_data):
         """
@@ -247,8 +223,7 @@ class HBnBFacade:
                 raise ValueError(f"Place with ID {review_data.get('place_id')} does not exist")
         
         # Update review
-        self.review_repo.update(review_id, review_data)
-        return self.get_review(review_id)
+        return self.review_repo.update_review(review_id, review_data)
 
     def delete_review(self, review_id):
         """
@@ -269,7 +244,7 @@ class HBnBFacade:
             return None
         
         # Get owner details
-        owner = self.get_user(place.owner_id)
+        owner = place.owner
         owner_details = None
         if owner:
             owner_details = {
@@ -281,26 +256,21 @@ class HBnBFacade:
         
         # Get amenities details
         amenity_details = []
-        if hasattr(place, 'amenities') and place.amenities:
-            for amenity_id in place.amenities:
-                amenity = self.get_amenity(amenity_id)
-                if amenity:
-                    amenity_details.append({
-                        'id': amenity.id,
-                        'name': amenity.name
-                    })
+        for amenity in place.amenities:
+            amenity_details.append({
+                'id': amenity.id,
+                'name': amenity.name
+            })
         
         # Get reviews details
         review_details = []
-        reviews = self.get_reviews_by_place(place_id)
-        if reviews:
-            for review in reviews:
-                review_details.append({
-                    'id': review.id,
-                    'text': review.text,
-                    'rating': review.rating,
-                    'user_id': review.user_id
-                })
+        for review in place.reviews:
+            review_details.append({
+                'id': review.id,
+                'text': review.text,
+                'rating': review.rating,
+                'user_id': review.user_id
+            })
         
         # Create detailed response with all place info
         from datetime import datetime

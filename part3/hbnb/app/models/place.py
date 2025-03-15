@@ -1,75 +1,57 @@
+from app import db
 from app.models.base_model import BaseModel
+from sqlalchemy.orm import validates, relationship
+from app.models.associations import place_amenity
 
 class Place(BaseModel):
-    def __init__(self, title, description, price, latitude, longitude, owner_id, amenities=None, **kwargs):
-        super().__init__(**kwargs)
-        self.title = self._validate_string(title, "Title", 100)
-        self.description = self._validate_string(description, "Description", 1000)
-        self._price = 0
-        self.price = price
-        self._latitude = 0
-        self.latitude = latitude
-        self._longitude = 0
-        self.longitude = longitude
-        self.owner_id = owner_id
-        self.amenities = amenities if amenities else []
+    __tablename__ = 'places'
 
-    def _validate_string(self, value, field_name, max_length):
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(1000), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    owner_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    
+    # Relationships
+    owner = relationship("User", back_populates="places")
+    reviews = relationship("Review", back_populates="place", cascade="all, delete-orphan")
+    amenities = relationship("Amenity", secondary=place_amenity, back_populates="places")
+
+    @validates('title', 'description')
+    def validate_string(self, key, value):
+        field_name = key.title()
+        max_length = 100 if key == 'title' else 1000
         if not isinstance(value, str) or len(value.strip()) == 0:
             raise ValueError(f"{field_name} is required and must be a non-empty string")
         if len(value) > max_length:
             raise ValueError(f"{field_name} must be at most {max_length} characters long")
         return value.strip()
 
-    @property
-    def price(self):
-        return self._price
-
-    @price.setter
-    def price(self, value):
+    @validates('price')
+    def validate_price(self, key, value):
         if not isinstance(value, (int, float)):
             raise ValueError("Price must be a number")
         if value < 0:
             raise ValueError("Price cannot be negative")
-        self._price = float(value)
+        return float(value)
 
-    @property
-    def latitude(self):
-        return self._latitude
-
-    @latitude.setter
-    def latitude(self, value):
+    @validates('latitude')
+    def validate_latitude(self, key, value):
         if not isinstance(value, (int, float)):
             raise ValueError("Latitude must be a number")
         if value < -90 or value > 90:
             raise ValueError("Latitude must be between -90 and 90")
-        self._latitude = float(value)
+        return float(value)
 
-    @property
-    def longitude(self):
-        return self._longitude
-
-    @longitude.setter
-    def longitude(self, value):
+    @validates('longitude')
+    def validate_longitude(self, key, value):
         if not isinstance(value, (int, float)):
             raise ValueError("Longitude must be a number")
         if value < -180 or value > 180:
             raise ValueError("Longitude must be between -180 and 180")
-        self._longitude = float(value)
+        return float(value)
 
     def update(self, data):
-        if 'title' in data:
-            self.title = self._validate_string(data['title'], "Title", 100)
-        if 'description' in data:
-            self.description = self._validate_string(data['description'], "Description", 1000)
-        if 'price' in data:
-            self.price = data['price']
-        if 'latitude' in data:
-            self.latitude = data['latitude']
-        if 'longitude' in data:
-            self.longitude = data['longitude']
-        if 'owner_id' in data:
-            self.owner_id = data['owner_id']
-        if 'amenities' in data:
-            self.amenities = data['amenities']
+        """Update the attributes of the place"""
         super().update(data)

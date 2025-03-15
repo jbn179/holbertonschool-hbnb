@@ -1,4 +1,5 @@
 from flask_restx import Namespace, Resource, fields
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.services.facade import facade
 from datetime import datetime
 
@@ -47,12 +48,24 @@ class PlaceList(Resource):
     @api.expect(place_model, validate=True)
     @api.response(201, 'Place successfully created')
     @api.response(400, 'Invalid input data')
+    @jwt_required()
     def post(self):
         """Register a new place"""
         try:
+            # Get the current user's identity from the JWT token
+            current_user_id = get_jwt_identity()
+            
             place_data = api.payload
+            
+            # Set the owner_id to the current user's ID
+            place_data['owner_id'] = current_user_id
             new_place = facade.create_place(place_data)
             
+            # Convertir les amenities en liste d'ID ou de dictionnaires si nécessaire
+            amenities_list = []
+            if hasattr(new_place, 'amenities') and new_place.amenities:
+                amenities_list = [{'id': amenity.id, 'name': amenity.name} for amenity in new_place.amenities]
+                
             return {
                 'id': new_place.id,
                 'title': new_place.title,
@@ -61,7 +74,7 @@ class PlaceList(Resource):
                 'latitude': new_place.latitude,
                 'longitude': new_place.longitude,
                 'owner_id': new_place.owner_id,
-                'amenities': new_place.amenities
+                'amenities': amenities_list  # Liste de dictionnaires ou d'IDs
             }, 201
         except ValueError as e:
             return {'error': str(e)}, 400
@@ -93,14 +106,37 @@ class PlaceResource(Resource):
     @api.response(200, 'Place updated successfully')
     @api.response(404, 'Place not found')
     @api.response(400, 'Invalid input data')
+    @api.response(403, 'Forbidden - Only the owner can modify this place')
+    @jwt_required()
     def put(self, place_id):
         """Update a place's information"""
         try:
+            # Get the current user's identity and JWT claims
+            current_user_id = get_jwt_identity()  # C'est une chaîne (ID utilisateur)
+            
+            # Get the claims that contain is_admin
+            claims = get_jwt()  
+            is_admin = claims.get('is_admin', False)
+            
+            # Get the place to check ownership
+            place = facade.get_place(place_id)
+            if not place:
+                return {'error': 'Place not found'}, 404
+                
+            # Check if the current user is the owner of the place or an admin
+            if not is_admin and place.owner_id != current_user_id:
+                return {'error': 'Unauthorized action'}, 403
+            
             place_data = api.payload
             updated_place = facade.update_place(place_id, place_data)
             
             if not updated_place:
                 return {'error': 'Place not found'}, 404
+                
+            # Convertir les amenities en liste d'ID ou de dictionnaires si nécessaire
+            amenities_list = []
+            if hasattr(updated_place, 'amenities') and updated_place.amenities:
+                amenities_list = [{'id': amenity.id, 'name': amenity.name} for amenity in updated_place.amenities]
                 
             return {
                 'id': updated_place.id,
@@ -110,10 +146,40 @@ class PlaceResource(Resource):
                 'latitude': updated_place.latitude,
                 'longitude': updated_place.longitude,
                 'owner_id': updated_place.owner_id,
-                'amenities': updated_place.amenities
+                'amenities': amenities_list  # Liste de dictionnaires ou d'IDs
             }, 200
         except ValueError as e:
             return {'error': str(e)}, 400
+        
+    @api.response(200, 'Place deleted successfully')
+    @api.response(404, 'Place not found')
+    @api.response(403, 'Forbidden - Only the owner or an admin can delete this place')
+    @jwt_required()
+    def delete(self, place_id):
+        """Delete a place"""
+        try:
+            # Get the current user's identity and JWT claims
+            current_user_id = get_jwt_identity()
+            claims = get_jwt()
+            is_admin = claims.get('is_admin', False)
+            
+            # Get the place to check ownership
+            place = facade.get_place(place_id)
+            if not place:
+                return {'error': 'Place not found'}, 404
+                
+            # Check if the current user is the owner of the place or an admin
+            if not is_admin and str(place.owner_id) != str(current_user_id):
+                return {'error': 'Unauthorized action'}, 403
+            
+            # Delete the place
+            success = facade.delete_place(place_id)
+            if not success:
+                return {'error': 'Place not found or could not be deleted'}, 404
+                
+            return {'message': 'Place deleted successfully'}, 200
+        except Exception as e:
+            return {'error': str(e)}, 500
 
 # Adding the review model
 review_model = api.model('PlaceReview', {

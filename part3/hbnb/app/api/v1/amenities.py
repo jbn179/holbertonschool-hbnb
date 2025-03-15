@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask_restx import Namespace, Resource, fields
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.services.facade import facade
 
 api = Namespace('amenities', description='Amenity operations')
@@ -13,9 +14,21 @@ class AmenityList(Resource):
     @api.expect(amenity_model, validate=True)
     @api.response(201, 'Amenity successfully created')
     @api.response(400, 'Invalid input data')
+    @api.response(403, 'Forbidden - Admin access required')
+    @jwt_required()
     def post(self):
-        """Create a new amenity"""
+        """Create a new amenity (admin only)"""
         try:
+            # Get the current user's identity
+            current_user_id = get_jwt_identity()  # C'est une chaîne (ID utilisateur)
+            claims = get_jwt()  # Obtenir les claims du token
+            is_admin = claims.get('is_admin', False)
+            
+            # Check if the current user is an admin
+            if not is_admin:
+                return {'error': 'Admin privileges required'}, 403
+                
+            # Get the amenity data from the request
             amenity_data = api.payload
             new_amenity = facade.create_amenity(amenity_data)
             return {
@@ -62,9 +75,23 @@ class AmenityResource(Resource):
     @api.response(200, 'Amenity updated successfully')
     @api.response(404, 'Amenity not found')
     @api.response(400, 'Invalid input data')
+    @api.response(403, 'Forbidden - Admin access required')
+    @jwt_required()
     def put(self, amenity_id):
-        """Update amenity details"""
+        """Update amenity details (admin only)"""
         try:
+            # Get the current user's identity
+            current_user_id = get_jwt_identity()  # C'est une chaîne (ID utilisateur)
+            
+            # Get the claims that contain is_admin
+            claims = get_jwt()  # Obtenir les claims du token
+            is_admin = claims.get('is_admin', False)
+            
+            # Check if the current user is an admin
+            if not is_admin:
+                return {'error': 'Admin privileges required'}, 403
+                
+            # Get the amenity data from the request
             amenity_data = api.payload
             updated_amenity = facade.update_amenity(amenity_id, amenity_data)
             if not updated_amenity:
