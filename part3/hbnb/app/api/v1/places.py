@@ -1,21 +1,21 @@
 from datetime import datetime
 from flask_restx import Namespace, Resource, fields
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt  # Ajouter get_jwt ici
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt  # Add get_jwt here
 from app.services.facade import facade
 from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 
-# Changer Blueprint en Namespace
+# Change Blueprint to Namespace
 api = Namespace('places', description='Places operations')
 
-# Modifier le modèle pour utiliser owner_id au lieu de user_id
+# Modify model to use owner_id instead of user_id
 place_model = api.model('Place', {
     'title': fields.String(required=True, description='Place title'),
     'description': fields.String(description='Place description'),
     'price': fields.Float(required=True, description='Price per night'),
     'latitude': fields.Float(required=True, description='Latitude coordinate'),
     'longitude': fields.Float(required=True, description='Longitude coordinate'),
-    'owner_id': fields.String(required=True, description='Owner ID'),  # Utilise owner_id au lieu de user_id
+    'owner_id': fields.String(required=True, description='Owner ID'),  # Use owner_id instead of user_id
     'amenities': fields.List(fields.String, description='List of amenity IDs')
 })
 
@@ -34,7 +34,7 @@ class PlaceList(Resource):
                 'price': place.price,
                 'latitude': place.latitude,
                 'longitude': place.longitude,
-                'owner_id': place.user_id,  # Utiliser owner_id au lieu de user_id pour cohérence
+                'owner_id': place.user_id,  # Use owner_id instead of user_id for consistency
                 'created_at': place.created_at.isoformat() if isinstance(place.created_at, datetime) else str(place.created_at),
                 'updated_at': place.updated_at.isoformat() if isinstance(place.updated_at, datetime) else str(place.updated_at)
             })
@@ -54,30 +54,30 @@ class PlaceList(Resource):
             
             data = request.json
             
-            # Vérifier si l'utilisateur est le propriétaire ou un admin
+            # Check if the user is the owner or an admin
             if not claims.get('is_admin', False) and data.get('owner_id') != current_user_id:
                 return {'error': 'You can only create places for yourself unless you are an admin'}, HTTPStatus.FORBIDDEN
                 
-            # Traiter les amenities séparément si nécessaire
+            # Process amenities separately if needed
             amenities = data.pop('amenities', []) if 'amenities' in data else []
             
-            # Convertir owner_id en user_id pour le modèle
+            # Convert owner_id to user_id for the model
             data_for_model = data.copy()
             if 'owner_id' in data_for_model:
                 data_for_model['user_id'] = data_for_model.pop('owner_id')
             
-            # S'assurer que les amenities sont incluses
+            # Ensure amenities are included
             data_for_model['amenities'] = amenities
                 
-            # Créer la place
+            # Create the place
             place = facade.create_place(data_for_model)
             
-            # Répondre avec les données de la place créée en utilisant owner_id pour l'API
+            # Respond with created place data using owner_id for the API
             response = {
                 'id': place.id, 
                 'title': place.title,
                 'description': place.description,
-                'owner_id': place.user_id,  # Mapper user_id à owner_id pour la réponse
+                'owner_id': place.user_id,  # Map user_id to owner_id for the response
                 'price': place.price,
                 'latitude': place.latitude,
                 'longitude': place.longitude,
@@ -142,7 +142,7 @@ class PlaceResource(Resource):
             if place.user_id != current_user_id and not is_admin:
                 return {'error': 'You must be the owner or an admin to update this place'}, HTTPStatus.FORBIDDEN
                 
-            # Convertir owner_id en user_id pour le modèle si présent
+            # Convert owner_id to user_id for the model if present
             place_data = request.json.copy()
             if 'owner_id' in place_data:
                 place_data['user_id'] = place_data.pop('owner_id')
@@ -153,9 +153,9 @@ class PlaceResource(Resource):
             # Return the updated place with consistent field naming
             return {
                 'id': updated_place.id,
-                'title': updated_place.title,  # Utiliser title au lieu de name
+                'title': updated_place.title,  # Use title instead of name
                 'description': updated_place.description,
-                'owner_id': updated_place.user_id,  # Convertir user_id en owner_id pour l'API
+                'owner_id': updated_place.user_id,  # Convert user_id to owner_id for the API
                 'price': updated_place.price,
                 'latitude': updated_place.latitude,
                 'longitude': updated_place.longitude,
@@ -213,24 +213,24 @@ class PlaceAmenities(Resource):
             if not place:
                 return {'error': 'Place not found'}, HTTPStatus.NOT_FOUND
                 
-            # Récupérer les détails du propriétaire avec gestion d'attributs manquants
+            # Get owner details with handling of missing attributes
             owner_details = None
             try:
                 owner = facade.get_user_by_id(place.user_id) if place.user_id else None
                 if owner:
                     owner_details = {
                         'id': owner.id,
-                        # Utilise getattr avec des valeurs par défaut pour éviter les AttributeError
+                        # Use getattr with default values to avoid AttributeError
                         'email': getattr(owner, 'email', None),
                         'first_name': getattr(owner, 'first_name', None),
                         'last_name': getattr(owner, 'last_name', None)
-                        # Ne pas utiliser username s'il n'existe pas
+                        # Don't use username if it doesn't exist
                     }
             except Exception as e:
-                print(f"Erreur lors de la récupération du propriétaire: {str(e)}")
+                print(f"Error retrieving owner: {str(e)}")
                 owner_details = {'id': place.user_id, 'error': 'Owner details not available'}
             
-            # Récupérer les amenities avec gestion d'erreur
+            # Get amenities with error handling
             amenities_details = []
             if hasattr(place, 'amenities'):
                 for amenity in place.amenities:
@@ -242,9 +242,9 @@ class PlaceAmenities(Resource):
                             'updated_at': str(getattr(amenity, 'updated_at', ''))
                         })
                     except Exception as e:
-                        print(f"Erreur lors de la récupération d'une amenity: {str(e)}")
+                        print(f"Error retrieving amenity: {str(e)}")
             
-            # Construire une réponse détaillée
+            # Build a detailed response
             response = {
                 'place': {
                     'id': place.id,

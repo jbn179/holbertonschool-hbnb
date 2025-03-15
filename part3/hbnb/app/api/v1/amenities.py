@@ -31,14 +31,14 @@ class AmenityList(Resource):
                 
             data = request.json
             
-            # Vérification explicite du type de 'name' avant d'appeler facade.create_amenity
+            # Explicit verification of 'name' type before calling facade.create_amenity
             if 'name' not in data:
                 return {'error': 'Missing required field: name'}, HTTPStatus.BAD_REQUEST
             
             if not isinstance(data['name'], str):
                 return {'error': 'Amenity name must be a string'}, HTTPStatus.BAD_REQUEST
             
-            # Création de l'amenity
+            # Creation of the amenity
             amenity = facade.create_amenity(data)
             return {'id': amenity.id, 'name': amenity.name}, HTTPStatus.CREATED
         except Exception as e:

@@ -2,41 +2,41 @@ import sqlite3
 import bcrypt
 import os
 
-# Chemin vers la base de données
+# Path to the database
 db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'instance', 'development.db'))
-print(f"Connexion à la base de données: {db_path}")
+print(f"Connecting to database: {db_path}")
 
-# Connexion à la base de données
+# Connect to the database
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
-# Afficher le hash actuel
+# Display the current hash
 cursor.execute("SELECT password FROM users WHERE email = 'admin@hbnb.io'")
 result = cursor.fetchone()
 
 if not result:
-    print("Administrateur non trouvé!")
+    print("Administrator not found!")
     conn.close()
     exit(1)
 
 current_hash = result[0]
-print(f"Hash actuel: {current_hash}")
+print(f"Current hash: {current_hash}")
 
-# Générer un nouveau hash pour 'admin1234'
+# Generate a new hash for 'admin1234'
 password = 'admin1234'
 salt = bcrypt.gensalt()
 new_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
-print(f"Nouveau hash: {new_hash}")
+print(f"New hash: {new_hash}")
 
-# Mettre à jour le mot de passe
+# Update the password
 cursor.execute("UPDATE users SET password = ? WHERE email = 'admin@hbnb.io'", (new_hash,))
 conn.commit()
-print("Mot de passe mis à jour avec succès!")
+print("Password updated successfully!")
 
-# Vérifier la mise à jour
+# Verify the update
 cursor.execute("SELECT password FROM users WHERE email = 'admin@hbnb.io'")
 updated_hash = cursor.fetchone()[0]
-print(f"Hash mis à jour: {updated_hash}")
+print(f"Updated hash: {updated_hash}")
 
-# Fermer la connexion
+# Close the connection
 conn.close()

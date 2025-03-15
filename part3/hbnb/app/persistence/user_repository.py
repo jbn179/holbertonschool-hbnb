@@ -10,14 +10,14 @@ class UserRepository(SQLAlchemyRepository):
         """Find a user by their email address"""
         print(f"Repository: looking for user with email '{email}'")
         
-        # Essayer avec la méthode standard
+        # Try with the standard method
         user = self.model.query.filter_by(email=email).first()
         
         if user:
             print(f"Repository: found user with ID {user.id}")
             return user
             
-        # Solution de secours : utiliser directement SQLite
+        # Backup solution: use SQLite directly
         import sqlite3
         try:
             conn = sqlite3.connect('../instance/development.db')
@@ -27,7 +27,7 @@ class UserRepository(SQLAlchemyRepository):
             
             if row:
                 print(f"Repository: found user in direct SQL with ID {row[0]}")
-                # Créer un objet User avec les données de la BDD
+                # Create a User object with data from the DB
                 from app.models.user import User
                 user = User()
                 user.id = row[0]

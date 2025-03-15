@@ -34,16 +34,16 @@ class Login(Resource):
         if not email or not password:
             return {'error': 'Email and password are required'}, HTTPStatus.BAD_REQUEST
         
-        # Récupération de l'utilisateur via la façade
+        # Retrieving user via facade
         try:
             user = facade.get_user_by_email(email)
             
             if not user:
                 return {'error': 'Invalid credentials'}, HTTPStatus.UNAUTHORIZED
             
-            # Vérification du mot de passe
+            # Password verification
             if user.verify_password(password):
-                # Création du token JWT
+                # Creating JWT token
                 access_token = create_access_token(
                     identity=str(user.id),
                     additional_claims={'is_admin': user.is_admin}
@@ -106,7 +106,7 @@ class ProtectedResource(Resource):
         user_id = get_jwt_identity()
         return {'message': f'Hello! You are authenticated as user with ID: {user_id}'}, HTTPStatus.OK
 
-# Endpoint utile pour les tests en production - à conserver
+# Endpoint for production tests - keep this
 @api.route('/direct-login')
 class DirectLogin(Resource):
     @api.doc('direct_login')
