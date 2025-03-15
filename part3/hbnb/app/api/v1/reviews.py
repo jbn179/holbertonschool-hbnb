@@ -1,12 +1,12 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from app.services.facade import facade, HBnBFacade  # Correction here (lowercase n)
+from app.services.facade import facade, HBnBFacade  # Correction ici (n minuscule)
 from http import HTTPStatus
 
 api = Namespace('reviews', description='Review operations')
 
-# Add this function at the beginning of the file, after the imports
+# Ajouter cette fonction au début du fichier, après les imports
 
 def format_review_response(review):
     """Format a review object as a response dictionary with detailed information"""
@@ -24,21 +24,21 @@ def format_review_response(review):
     if hasattr(review, 'updated_at'):
         response['updated_at'] = str(review.updated_at)
     
-    # Add place details - direct retrieval via facade if necessary
+    # Add place details - récupération directe via la façade si nécessaire
     place_info = {'id': review.place_id}
     try:
-        # Try accessing via relationship
+        # Essai d'accès via la relation
         place = getattr(review, 'place', None)
         
-        # If relationship doesn't exist or access fails, retrieve via facade
+        # Si la relation n'existe pas ou si l'accès échoue, récupérer via la façade
         if not place:
             place = facade.get_place_by_id(review.place_id)
             
         if place:
-            # Retrieve basic attributes that all places should have
+            # Récupérer les attributs de base que toutes les places devraient avoir
             place_info['id'] = place.id
             
-            # Try to get other useful attributes
+            # Tenter d'obtenir d'autres attributs utiles
             if hasattr(place, 'title'):
                 place_info['title'] = place.title
             if hasattr(place, 'name'):
@@ -54,23 +54,23 @@ def format_review_response(review):
             response['place'] = place_info
     except Exception as e:
         print(f"Error adding place details: {str(e)}")
-        response['place'] = place_info  # Always include at least the ID
+        response['place'] = place_info  # Toujours inclure au moins l'ID
     
-    # Add user details - direct retrieval via facade if necessary
+    # Add user details - récupération directe via la façade si nécessaire
     user_info = {'id': review.user_id}
     try:
-        # Try accessing via relationship
+        # Essai d'accès via la relation
         user = getattr(review, 'user', None)
         
-        # If relationship doesn't exist or access fails, retrieve via facade
+        # Si la relation n'existe pas ou si l'accès échoue, récupérer via la façade
         if not user:
             user = facade.get_user_by_id(review.user_id)
             
         if user:
-            # Retrieve basic attributes that all users should have
+            # Récupérer les attributs de base que tous les utilisateurs devraient avoir
             user_info['id'] = user.id
             
-            # Try to get other useful attributes
+            # Tenter d'obtenir d'autres attributs utiles
             if hasattr(user, 'first_name'):
                 user_info['first_name'] = user.first_name
             if hasattr(user, 'last_name'):
@@ -81,7 +81,7 @@ def format_review_response(review):
             response['user'] = user_info
     except Exception as e:
         print(f"Error adding user details: {str(e)}")
-        response['user'] = user_info  # Always include at least the ID
+        response['user'] = user_info  # Toujours inclure au moins l'ID
     
     return response
 
@@ -124,10 +124,10 @@ class ReviewList(Resource):
     def post(self):
         """Create a new review (requires authentication)"""
         try:
-            # Get user identity (sub)
+            # Obtenir l'identité de l'utilisateur (sub)
             user_id = get_jwt_identity()
             
-            # Get complete JWT claims to access is_admin
+            # Obtenir les claims complets du JWT pour accéder à is_admin
             jwt_claims = get_jwt()
             is_admin = jwt_claims.get('is_admin', False)
             
@@ -135,7 +135,7 @@ class ReviewList(Resource):
             data = request.json
             place_id = data.get('place_id', '')
             
-            # ADDITION: Check if the user has already left a review for this place
+            # AJOUT : Vérifier si l'utilisateur a déjà laissé une review pour ce lieu
             from app.models.review import Review
             existing_review = Review.query.filter_by(
                 user_id=user_id,
@@ -144,17 +144,17 @@ class ReviewList(Resource):
             
             if existing_review:
                 return {
-                    'error': 'You have already left a review for this place. Use PUT to modify it.'
+                    'error': 'Vous avez déjà laissé une review pour ce lieu. Utilisez PUT pour la modifier.'
                 }, HTTPStatus.CONFLICT
             
-            # IMPORTANT MODIFICATION: Check or temporarily create a user
+            # MODIFICATION IMPORTANTE: Vérifier ou créer temporairement un utilisateur
             from app.models.user import User
             from app import db
             
-            # Look for the JWT token user in the database
+            # Chercher l'utilisateur du token JWT dans la base de données
             user = User.query.get(user_id)
             if not user:
-                # User doesn't exist, create a temporary one
+                # L'utilisateur n'existe pas, le créer temporairement
                 print(f"User {user_id} does not exist, creating temporary user")
                 new_user = User(
                     id=user_id,
@@ -166,15 +166,15 @@ class ReviewList(Resource):
                 db.session.commit()
                 user = new_user
             
-            # Create review with all required fields
+            # Créer la review avec tous les champs requis
             review_data = {
                 'text': data.get('text', ''),
                 'rating': data.get('rating', 5),
                 'place_id': place_id,
-                'user_id': user_id  # Directly include user ID in the data
+                'user_id': user_id  # Inclure directement l'ID utilisateur dans les données
             }
             
-            # Simplified call to facade method
+            # Appel simplifié à la méthode de façade
             review = facade.create_review(review_data)
             
             # Return the created review with enriched data
@@ -187,10 +187,10 @@ class ReviewList(Resource):
             import traceback
             print(traceback.format_exc())
             
-            # ADDITION: Specific handling for unique constraint error
+            # AJOUT : Gestion spécifique de l'erreur de contrainte unique
             if 'unique_user_place_review' in str(e):
                 return {
-                    'error': 'You have already left a review for this place. Use PUT to modify it.'
+                    'error': 'Vous avez déjà laissé une review pour ce lieu. Utilisez PUT pour la modifier.'
                 }, HTTPStatus.CONFLICT
                 
             return {'error': f"Unexpected error: {str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
@@ -219,10 +219,10 @@ class ReviewResource(Resource):
     @jwt_required()
     def put(self, review_id):
         """Update a review (author or admin only)"""
-        # Get user identity (sub)
+        # Obtenir l'identité de l'utilisateur (sub)
         user_id = get_jwt_identity()
         
-        # Get complete JWT claims to access is_admin
+        # Obtenir les claims complets du JWT pour accéder à is_admin
         jwt_claims = get_jwt()
         is_admin = jwt_claims.get('is_admin', False)
         
@@ -255,10 +255,10 @@ class ReviewResource(Resource):
     @jwt_required()
     def delete(self, review_id):
         """Delete a review (author or admin only)"""
-        # Get user identity (sub)
+        # Obtenir l'identité de l'utilisateur (sub)
         user_id = get_jwt_identity()
         
-        # Get complete JWT claims to access is_admin
+        # Obtenir les claims complets du JWT pour accéder à is_admin
         jwt_claims = get_jwt()
         is_admin = jwt_claims.get('is_admin', False)
         
@@ -275,7 +275,7 @@ class ReviewResource(Resource):
             
         # Delete the review (admins can delete any review)
         try:
-            # IMPORTANT: Pass current user ID as second parameter
+            # IMPORTANT: Passer l'ID de l'utilisateur courant comme deuxième paramètre
             result = facade.delete_review(review_id, user_id)
             if result:
                 return '', HTTPStatus.NO_CONTENT

@@ -125,13 +125,13 @@ class UserResource(Resource):
     def put(self, user_id):
         """Update a user (admin only)"""
         # check admin 
-        current_user_id = get_jwt_identity()  # Rename this variable
+        current_user_id = get_jwt_identity()  # Renommez cette variable
         claims = get_jwt()  # Retrieve additional claims
         if not claims.get('is_admin', False):
             return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
         
         # Get the user to update
-        user = facade.get_user_by_id(user_id)  # Now use the ID from the URL
+        user = facade.get_user_by_id(user_id)  # Maintenant utilise l'ID de l'URL
         if not user:
             return {'error': 'User not found'}, HTTPStatus.NOT_FOUND
         
@@ -212,12 +212,12 @@ class AdminUserModify(Resource):
     def put(self, user_id):
         """Admin updates a user (admin only, can update email and password)"""
         # Check admin privileges
-        current_user_id = get_jwt_identity()  # Rename this variable
+        current_user_id = get_jwt_identity()  # Renommer cette variable
         claims = get_jwt()  # Retrieve additional claims
         if not claims.get('is_admin', False):
             return {'error': 'Admin privileges required'}, HTTPStatus.FORBIDDEN
             
-        # Get the user to update - now correctly use user_id from the URL
+        # Get the user to update - maintenant utilise correctement user_id de l'URL
         user = facade.get_user_by_id(user_id)
         if not user:
             return {'error': 'User not found'}, HTTPStatus.NOT_FOUND

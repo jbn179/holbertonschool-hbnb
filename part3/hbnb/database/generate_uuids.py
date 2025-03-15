@@ -1,17 +1,17 @@
 import uuid
 
-# Generate UUID4s for amenities
-# (admin UUID is already defined as fixed in the specifications)
+# Générer des UUID4 pour les commodités
+# (admin UUID est déjà défini comme fixe dans les spécifications)
 wifi_uuid = uuid.uuid4()
 pool_uuid = uuid.uuid4()
 ac_uuid = uuid.uuid4()
 
-print(f"UUID for WiFi: {wifi_uuid}")
-print(f"UUID for Swimming Pool: {pool_uuid}")
-print(f"UUID for Air Conditioning: {ac_uuid}")
+print(f"UUID pour WiFi: {wifi_uuid}")
+print(f"UUID pour Swimming Pool: {pool_uuid}")
+print(f"UUID pour Air Conditioning: {ac_uuid}")
 
-# Display SQL instructions with the generated UUIDs
-print("\nSQL instructions to insert into setup_db.sql:")
+# Afficher les instructions SQL avec les UUID générés
+print("\nInstructions SQL à insérer dans setup_db.sql:")
 print(f"""
 -- Insert initial amenities with generated UUID4 values
 INSERT INTO amenities (id, name)
