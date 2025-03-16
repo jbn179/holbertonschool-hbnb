@@ -32,8 +32,8 @@ class Place(BaseModel):
     def validate_price(self, key, value):
         if not isinstance(value, (int, float)):
             raise ValueError("Price must be a number")
-        if value < 0:
-            raise ValueError("Price cannot be negative")
+        if value <= 0:
+            raise ValueError("Price cannot be negative or null")
         return float(value)
 
     @validates('latitude')

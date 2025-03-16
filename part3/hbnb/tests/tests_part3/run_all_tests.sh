@@ -9,7 +9,8 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}=== Lancement des tests curl pour l'API HBnB ===${NC}\n"
 
 # Emplacement des scripts de test
-TEST_DIR="/home/jbn/holbertonschool-hbnb/part3/hbnb/tests/tests_curl_part3"
+SCRIPT_DIR="$(dirname "$0")"
+TEST_DIR="${SCRIPT_DIR}/../tests_part3"
 
 # Rendre les scripts exécutables
 chmod +x $TEST_DIR/*.sh
