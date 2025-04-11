@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="HBNB - Find and book vacation rentals at affordable prices">
+    <title>HBNB - Places</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="images/icon.png" type="image/png">
+</head>
+<body>
+    <header>
+        <nav aria-label="Main navigation">
+            <div class="logo-container">
+                <a href="index.html">
+                    <img src="images/logo.png" alt="HBNB Logo" class="logo">
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="login.html" id="login-link" class="login-button">Login</a>
+                <a href="#" id="logout-link" class="logout-button" style="display: none;">Logout</a>
+            </div>
+        </nav>
+    </header>
+    
+    <main>
+        <div id="message-container" aria-live="polite"></div>
+        
+        <h1 class="available-places-title">Available Places</h1>
+        
+        <div class="filter-section">
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label for="price-filter">Max Price:</label>
+                    <select id="price-filter" aria-label="Filter places by maximum price">
+                        <option value="">All</option>
+                        <option value="10">$10</option>
+                        <option value="50">$50</option>
+                        <option value="100">$100</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <section id="places-list" aria-label="Available places">
+            <h2 class="visually-hidden">List of Available Places</h2>
+            <!-- Places will be populated dynamically -->
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 HBNB - All rights reserved</p>
+    </footer>
+    
+    <script src="scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View detailed information about this accommodation">
+    <title>Place Details - HBNB</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="images/icon.png" type="image/png">
+</head>
+<body>
+    <header>
+        <nav aria-label="Main navigation">
+            <div class="logo-container">
+                <a href="index.html">
+                    <img src="images/logo.png" alt="HBNB Logo" class="logo">
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="login.html" id="login-link" class="login-button">Login</a>
+                <a href="#" id="logout-link" class="logout-button" style="display: none;">Logout</a>
+            </div>
+        </nav>
+    </header>
+    
+    <main>
+        <div id="message-container" aria-live="polite"></div>
+        
+        <section id="place-details" class="place-details" aria-labelledby="place-title">
+            <h2 id="place-title" class="visually-hidden">Place Details</h2>
+            <!-- Place details will be populated dynamically -->
+        </section>
+        
+        <section id="place-reviews" class="reviews-section" aria-labelledby="reviews-title">
+            <h2 id="reviews-title">Reviews</h2>
+            <div class="reviews-container">
+                <!-- Reviews will be populated dynamically -->
+            </div>
+        </section>
+        
+        <section id="add-review" class="add-review" aria-labelledby="add-review-title">
+            <h2 id="add-review-title">Write a Review</h2>
+            <form id="review-form" class="form">
+                <div class="form-group">
+                    <label for="rating">Rating:</label>
+                    <select id="rating" name="rating" required
+                           aria-required="true"
+                           oninvalid="this.setCustomValidity('Please select a rating')" 
+                           oninput="this.setCustomValidity('')">
+                        <option value="">Select Rating</option>
+                        <option value="1">1 - Poor</option>
+                        <option value="2">2 - Fair</option>
+                        <option value="3">3 - Good</option>
+                        <option value="4">4 - Very Good</option>
+                        <option value="5">5 - Excellent</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="review">Your Review:</label>
+                    <textarea id="review" name="review" placeholder="Share your experience..." required
+                             aria-required="true"
+                             oninvalid="this.setCustomValidity('Please enter your review')" 
+                             oninput="this.setCustomValidity('')"></textarea>
+                </div>
+                
+                <button type="submit">Submit Review</button>
+            </form>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 HBNB - All rights reserved</p>
+    </footer>
+    
+    <script src="scripts.js"></script>
+</body>
+</html>

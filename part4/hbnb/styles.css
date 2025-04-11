@@ -1,0 +1,672 @@
+/* 
+  Styles pour HBNB Part 4
+*/
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header Styles */
+header {
+    background-color: #F0E1CD;
+    color: #fff;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    height: 50px;
+    width: auto;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin-left: 1rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+nav a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Navigation links styling */
+.login-button, .logout-button {
+    background-color: #00A699;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: white;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.login-button:hover, .logout-button:hover {
+    background-color: #008F86;
+}
+
+/* Main Container */
+main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+}
+
+/* Form Styles */
+form {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+form h1, form h2 {
+    margin-bottom: 1.5rem;
+    color: #00625c;
+    text-align: center;
+}
+
+form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+form input, form select, form textarea {
+    width: 100%;
+    padding: 0.8rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+form button {
+    background-color: #00A699;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+form button:hover {
+    background-color: #008F86;
+}
+
+form button[disabled] {
+    opacity: 0.8;
+    cursor: not-allowed;
+    background-color: #00A699;
+}
+
+/* Button with loading state */
+.button-with-loader {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.button-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+    display: inline-block;
+}
+
+/* Filter section */
+.filter-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.filter-group label {
+    margin-bottom: 0;
+    font-weight: 600;
+    color: #484848;
+    font-size: 1rem;
+}
+
+.filter-group select {
+    width: auto;
+    padding: 0.6rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 1rem;
+    text-align: left;
+    padding-right: 35px;
+    appearance: none;
+    background: url("data:image/svg+xml;utf8,<svg fill='%2300A699' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat;
+    background-position: right 10px center;
+    background-color: white;
+    transition: all 0.2s ease;
+    min-width: 70px;
+}
+
+/* Places Grid */
+#places-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    perspective: 1000px;
+    min-height: 200px;
+}
+
+/* Place cards */
+.place-card {
+    background-color: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+                opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 0.3s ease;
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin: 0.5rem 0;
+    opacity: 1; 
+    transform: translateY(0);
+    will-change: transform, opacity;
+}
+
+.place-card:hover {
+    transform: translateY(-5px) scale(1.02) !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.place-info {
+    padding: 1rem;
+    width: 100%;
+    opacity: 1;
+}
+
+.place-name {
+    font-size: 1.8rem;
+    margin-bottom: 0.7rem;
+    color: #00625c;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.place-price {
+    font-size: 1.2rem;
+    margin-bottom: 0.7rem;
+    color: #767676;
+    font-weight: 400;
+}
+
+.view-details-btn {
+    display: inline-block;
+    background-color: #00A699;
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.view-details-btn:hover {
+    background-color: #008F86;
+}
+
+/* Place Details Page */
+.place-details {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    max-width: 1000px;
+    margin: 0 auto 2rem;
+}
+
+.place-title {
+    font-size: 1.8rem;
+    color: #00625c;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.host-price {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.description, .amenities {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.description strong, .amenities strong, .host-price strong {
+    color: #484848;
+}
+
+/* Reviews Section */
+#reviews, #place-reviews {
+    margin-bottom: 2rem;
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#reviews h2, #place-reviews h2 {
+    font-size: 1.8em;
+    color: #00625c;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.reviews-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.review-card {
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    margin-bottom: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.review-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.reviewer-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #00625c;
+}
+
+.review-rating {
+    color: #00A699;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.review-text {
+    margin: 10px 0;
+    line-height: 1.6;
+    color: #484848;
+}
+
+.date {
+    font-size: 12px;
+    color: #767676;
+    text-align: right;
+    margin-top: 10px;
+}
+
+.no-reviews {
+    color: #767676;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Messages et notifications */
+#message-container {
+    max-width: 500px;
+    margin: 0 auto 20px;
+}
+
+.message {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.error {
+    background-color: rgba(255, 205, 210, 0.7);
+    color: #7c292e;
+    border: 1px solid rgba(239, 154, 154, 0.5);
+}
+
+.success {
+    background-color: rgba(200, 230, 201, 0.7);
+    color: #2e5931;
+    border: 1px solid rgba(165, 214, 167, 0.5);
+}
+
+/* Popup Message Container */
+.popup-message-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: auto;
+    max-width: 80%;
+    pointer-events: none;
+}
+
+.popup-message {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 25px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    opacity: 1;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: auto;
+    backdrop-filter: blur(5px);
+    color: white;
+}
+
+/* S'assurer que le texte à l'intérieur des popups soit blanc */
+.popup-message span {
+    color: white;
+}
+
+.popup-message.error {
+    background-color: rgba(249, 121, 125, 0.85);
+    border: 1px solid rgba(255, 64, 70, 0.3);
+}
+
+.popup-message.success {
+    background-color: rgba(124, 204, 143, 0.85);
+    border: 1px solid rgba(30, 126, 52, 0.3);
+}
+
+.close-popup {
+    margin-left: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+}
+
+/* Error Text */
+.error-text {
+    color: #FF5A5F;
+    font-size: 14px;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}
+
+/* No Results */
+.no-results {
+    text-align: center;
+    color: #767676;
+    margin: 4rem 0;
+    font-style: italic;
+    grid-column: 1 / -1;
+    opacity: 0;
+    animation: fadeIn 0.8s ease forwards 0.3s;
+}
+
+/* Footer */
+footer {
+    background-color: #484848;
+    color: #fff;
+    text-align: center;
+    padding: 1rem;
+    margin-top: auto;
+}
+
+/* Add Review Form */
+.add-review {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.add-review h2 {
+    color: #484848;
+    font-size: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+/* Details Button */
+.details-button {
+    background-color: #00A699;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+.details-button:hover {
+    background-color: #008F86;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #places-list {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    form {
+        padding: 1.5rem;
+    }
+    
+    .filter-container {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .filter-group {
+        width: 100%;
+    }
+    
+    .filter-group select {
+        max-width: 100%;
+    }
+
+    .place-info-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Centered content */
+.centered-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Title for Available Places */
+.available-places-title {
+    text-align: center;
+    margin: 0 0 1.5rem;
+    color: #00625c;
+    font-size: 2.2rem;
+    font-weight: 600;
+}
+
+/* Visually hidden elements - for accessibility */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Filter section restyle */
+.filter-section {
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+    text-align: center;
+    background-color: transparent;
+}
+
+/* Loading indicators */
+.loading-spinner {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(0, 166, 153, 0.3);
+    border-radius: 50%;
+    border-top-color: #00A699;
+    animation: spin 1s ease-in-out infinite;
+    margin: 20px auto;
+}
+
+/* Skeleton loading elements */
+.skeleton-card {
+    width: 100%;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.skeleton-box {
+    display: inline-block;
+    height: 1em;
+    position: relative;
+    overflow: hidden;
+    background-color: #DDDBDD;
+    border-radius: 4px;
+}
+
+.skeleton-title {
+    width: 70%;
+    height: 28px;
+    margin-bottom: 15px;
+}
+
+.skeleton-text {
+    width: 100%;
+    height: 16px;
+    margin-bottom: 10px;
+}
+
+.skeleton-text:last-child {
+    width: 80%;
+}
+
+/* State transitions */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease-out;
+}
+
+/* Animation keyframes */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-30px); }
+    to { transform: translateY(0); }
+}
+
+@keyframes highlightNewReview {
+    0% { background-color: #d4edda; }
+    70% { background-color: #d4edda; }
+    100% { background-color: transparent; }
+}
+
+/* Form submitted state */
+.form-submitted {
+    background-color: rgba(240, 248, 255, 0.6) !important;
+    transition: background-color 0.5s ease;
+}
